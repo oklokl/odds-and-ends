@@ -1,0 +1,97 @@
+package com.example.myapplication // 이 부분을 반드시 확인하고 수정하세요!
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+// ... 나머지 코드는 동일합니다 ...
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            // MaterialTheme을 사용하여 앱에 일관된 디자인 적용 (권장)
+            // 프로젝트에 테마 파일이 있다면 해당 테마를 사용하세요.
+            MaterialTheme {
+                WordReplacerApp()
+            }
+        }
+    }
+}
+
+@Composable
+fun WordReplacerApp() {
+    // UI 상태를 관리하는 mutableStateOf 변수들
+    var targetWord by remember { mutableStateOf("") }
+    var replacement by remember { mutableStateOf("") }
+    var originalText by remember { mutableStateOf("") }
+    var replacedText by remember { mutableStateOf("") }
+
+    // 전체 화면을 채우고 패딩을 적용하는 Column 레이아웃
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp)) {
+
+        // 변경할 단어 입력 필드
+        OutlinedTextField(
+            value = targetWord,
+            onValueChange = { targetWord = it },
+            label = { Text("대체할 단어") }, // 사용자에게 더 친숙한 문구로 변경
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true // 한 줄 입력으로 제한
+        )
+
+        Spacer(modifier = Modifier.height(8.dp)) // 간격
+
+        // 변경될 단어 입력 필드
+        OutlinedTextField(
+            value = replacement,
+            onValueChange = { replacement = it },
+            label = { Text("대체될 단어") }, // 사용자에게 더 친숙한 문구로 변경
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true // 한 줄 입력으로 제한
+        )
+
+        Spacer(modifier = Modifier.height(8.dp)) // 간격
+
+        // 원본 텍스트 입력 필드 (여러 줄 입력 가능)
+        OutlinedTextField(
+            value = originalText,
+            onValueChange = { originalText = it },
+            label = { Text("여기에 전체 텍스트를 입력하세요...") }, // 사용자에게 더 친숙한 문구로 변경
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(150.dp), // 높이 지정
+            maxLines = 10 // 최대 10줄까지 표시
+        )
+
+        Spacer(modifier = Modifier.height(8.dp)) // 간격
+
+        // "Replace" 액션 버튼
+        Button(onClick = {
+            // 버튼 클릭 시 originalText 내 targetWord를 replacement로 교체
+            // replace 함수는 모든 일치하는 부분을 교체합니다.
+            replacedText = originalText.replace(targetWord, replacement)
+        }) {
+            Text("단어 대체") // 사용자에게 더 친숙한 문구로 변경
+        }
+
+        Spacer(modifier = Modifier.height(16.dp)) // 간격
+
+        // 결과 텍스트 출력 영역
+        if (replacedText.isNotEmpty()) { // 대체된 텍스트가 있을 때만 표시
+            Text("결과:", fontSize = 18.sp, style = MaterialTheme.typography.headlineSmall) // 폰트 크기 및 스타일 적용
+            Text(
+                text = replacedText,
+                modifier = Modifier.padding(top = 8.dp),
+                style = MaterialTheme.typography.bodyLarge // 텍스트 스타일 적용
+            )
+        }
+    }
+}
