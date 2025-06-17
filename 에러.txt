@@ -1,0 +1,212 @@
+// 아래 코드에 에러가 발생 하고 있습니다 이유가 Fullscreen  FullscreenExit 이 부분이 문제인대 어떻게 수정 해야 할까요?
+
+
+package com.example.myapplication // Gradle 파일의 namespace 및 프로젝트 구조와 일치해야 합니다.
+
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.os.Bundle
+import android.widget.Toast // Toast 메시지를 사용하기 위해 import
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Fullscreen // Fullscreen 아이콘 (확장 라이브러리 필요)
+import androidx.compose.material.icons.filled.FullscreenExit // FullscreenExit 아이콘 (확장 라이브러리 필요)
+import androidx.compose.material3.* // Material3 컴포넌트
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog // 다이얼로그 컴포넌트
+import androidx.compose.ui.window.DialogProperties // 다이얼로그 속성
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            // MaterialTheme을 사용하여 앱에 Material Design 테마 적용
+            MaterialTheme {
+                WordReplacerApp()
+            }
+        }
+    }
+}
+
+// @OptIn 어노테이션은 실험적인 API를 사용할 때 필요합니다.
+// TopAppBar는 현재 ExperimentalMaterial3Api에 속합니다.
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun WordReplacerApp() {
+    // UI 상태를 관리하는 mutableStateOf 변수들
+    var targetWord by remember { mutableStateOf("") } // 대체할 단어 입력 필드의 상태
+    var replacement by remember { mutableStateOf("") } // 대체될 단어 입력 필드의 상태
+    var originalText by remember { mutableStateOf("") } // 원본 텍스트 입력 필드의 상태
+    var replacedText by remember { mutableStateOf("") } // 결과 텍스트 출력 필드의 상태
+    var showFullScreenDialog by remember { mutableStateOf(false) } // 전체 화면 다이얼로그 표시 여부
+
+    val context = LocalContext.current // 클립보드 서비스 및 Toast 메시지를 위해 현재 Context 가져오기
+    val originalTextScrollState = rememberScrollState() // 원본 텍스트 필드 스크롤 상태
+    val replacedTextScrollState = rememberScrollState() // 결과 텍스트 출력 스크롤 상태
+
+    Column(modifier = Modifier
+        .fillMaxSize() // 화면 전체 채우기
+        .padding(16.dp)) { // 16dp 패딩 적용
+
+        // 대체할 단어 입력 필드
+        OutlinedTextField(
+            value = targetWord,
+            onValueChange = { targetWord = it }, // 입력 값 변경 시 상태 업데이트
+            label = { Text("대체할 단어") }, // 입력 필드 라벨
+            modifier = Modifier.fillMaxWidth(), // 가로 너비 전체 채우기
+            singleLine = true // 한 줄 입력으로 제한
+        )
+
+        Spacer(modifier = Modifier.height(8.dp)) // 8dp 세로 간격
+
+        // 대체될 단어 입력 필드
+        OutlinedTextField(
+            value = replacement,
+            onValueChange = { replacement = it },
+            label = { Text("대체될 단어") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(8.dp)) // 8dp 세로 간격
+
+        // 원본 텍스트 입력 필드와 전체 화면 확대 버튼을 포함하는 가로 Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically // Row 내 아이템들을 수직 중앙 정렬
+        ) {
+            OutlinedTextField(
+                value = originalText,
+                onValueChange = { originalText = it },
+                label = { Text("여기에 전체 텍스트를 입력하세요...") },
+                modifier = Modifier
+                    .weight(1f) // Row 내에서 남은 공간을 모두 차지하도록 설정
+                    .height(150.dp) // 높이 지정
+                    .verticalScroll(originalTextScrollState), // 스크롤 가능하도록 설정
+                maxLines = Int.MAX_VALUE // 스크롤을 위해 maxLines를 무한대로 설정
+            )
+
+            // 확대 버튼 (OutlinedTextField의 우측에 위치)
+            IconButton(
+                onClick = { showFullScreenDialog = true }, // 클릭 시 전체 화면 다이얼로그 표시
+                modifier = Modifier
+                    .wrapContentSize() // 아이콘 버튼 크기를 내용에 맞게 조정
+                    .padding(start = 8.dp) // 텍스트 필드와의 간격
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Fullscreen, // Fullscreen 아이콘 사용
+                    contentDescription = "전체 화면으로 확대" // 접근성을 위한 설명
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp)) // 8dp 세로 간격
+
+        // "단어 대체" 및 "결과 복사" 버튼들을 가로로 배치하기 위한 Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround, // 버튼들 사이에 균등한 공간 배분
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 단어 대체 버튼
+            Button(
+                onClick = {
+                    // originalText 내 targetWord를 replacement로 교체
+                    replacedText = originalText.replace(targetWord, replacement)
+                },
+                modifier = Modifier.weight(1f) // 남은 공간의 1/2 차지
+            ) {
+                Text("단어 대체")
+            }
+
+            Spacer(modifier = Modifier.width(8.dp)) // 8dp 가로 간격
+
+            // 결과 복사 버튼
+            Button(
+                onClick = {
+                    if (replacedText.isNotEmpty()) {
+                        val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        val clipData = ClipData.newPlainText("Replaced Text", replacedText)
+                        clipboardManager.setPrimaryClip(clipData)
+                        Toast.makeText(context, "결과가 클립보드에 복사되었습니다.", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "복사할 내용이 없습니다.", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                modifier = Modifier.weight(1f), // 남은 공간의 1/2 차지
+                enabled = replacedText.isNotEmpty() // 결과 텍스트가 있을 때만 활성화
+            ) {
+                Text("결과 복사")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp)) // 16dp 세로 간격
+
+        // 결과 텍스트 출력 영역
+        if (replacedText.isNotEmpty()) { // 대체된 텍스트가 있을 때만 표시
+            Text("결과:", fontSize = 18.sp, style = MaterialTheme.typography.headlineSmall)
+            Text(
+                text = replacedText,
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .fillMaxWidth() // 가로 너비 채우기
+                    .heightIn(max = 200.dp) // 최대 높이 제한 (200dp 이상일 경우 스크롤 생김)
+                    .verticalScroll(replacedTextScrollState), // 결과 텍스트에 스크롤 적용
+                style = MaterialTheme.typography.bodyLarge
+            )
+        }
+    }
+
+    // 전체 화면 확대/축소 다이얼로그 (showFullScreenDialog 값이 true일 때만 표시됨)
+    if (showFullScreenDialog) {
+        Dialog(
+            onDismissRequest = { showFullScreenDialog = false }, // 다이얼로그 외부 터치 또는 뒤로 가기 버튼 시 닫기
+            properties = DialogProperties(usePlatformDefaultWidth = false) // 다이얼로그가 플랫폼 기본 너비를 사용하지 않고, 내용에 따라 크기를 조절하도록 설정
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxSize() // 다이얼로그 내용을 전체 화면으로 채움
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                ) {
+                    // 상단 앱 바 (제목과 축소 버튼 포함)
+                    TopAppBar(
+                        title = { Text("전체 텍스트 편집") },
+                        actions = {
+                            // 축소 버튼 (클릭 시 다이얼로그 닫기)
+                            IconButton(onClick = { showFullScreenDialog = false }) {
+                                Icon(
+                                    imageVector = Icons.Default.FullscreenExit, // FullscreenExit 아이콘 사용
+                                    contentDescription = "전체 화면 축소"
+                                )
+                            }
+                        }
+                    )
+
+                    // 전체 화면 입력 필드 (원본 텍스트와 연결)
+                    OutlinedTextField(
+                        value = originalText,
+                        onValueChange = { originalText = it },
+                        modifier = Modifier
+                            .fillMaxSize() // 다이얼로그 내에서 사용 가능한 전체 크기
+                            .verticalScroll(rememberScrollState()), // 다이얼로그 내부에서 스크롤 가능하도록 설정
+                        label = { Text("전체 텍스트를 편집하세요...") },
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp)
+                    )
+                }
+            }
+        }
+    }
+}
