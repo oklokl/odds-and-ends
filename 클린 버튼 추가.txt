@@ -1,4 +1,4 @@
-package com.krdondon.replacestring
+package com.krdondon.Replacestring
 
 import android.content.ClipData
 import android.content.ClipboardManager
