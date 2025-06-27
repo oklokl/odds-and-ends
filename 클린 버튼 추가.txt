@@ -1,22 +1,22 @@
-package com.krdondon.replacestring // 실제 패키지 이름으로 변경해주세요. (이전과 동일하게 유지)
+package com.krdondon.replacestring
 
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.content.Context // Context를 사용하기 위해 import
+import android.content.Context
 import android.os.Bundle
-import android.widget.Toast // 사용자에게 복사 완료 메시지를 보여주기 위해 import
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment // Alignment 추가
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext // Composable에서 Context를 얻기 위해 import
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.rememberScrollState // 스크롤 상태를 기억하기 위해 import
-import androidx.compose.foundation.verticalScroll // 세로 스크롤을 위해 import
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,19 +31,18 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun WordReplacerApp() {
-    // UI 상태를 관리하는 mutableStateOf 변수들
     var targetWord by remember { mutableStateOf("") }
     var replacement by remember { mutableStateOf("") }
     var originalText by remember { mutableStateOf("") }
-    var replacedText by remember { mutableStateOf("") } // 결과 텍스트도 mutableStateOf로 유지
+    var replacedText by remember { mutableStateOf("") }
 
-    // Composable 함수 내에서 Context를 얻는 방법
-    val context = LocalContext.current // 클립보드 서비스 접근을 위해 Context 필요
+    val context = LocalContext.current
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .padding(16.dp)) {
-
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         OutlinedTextField(
             value = targetWord,
             onValueChange = { targetWord = it },
@@ -64,26 +63,22 @@ fun WordReplacerApp() {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // 여기에 전체 텍스트를 입력하세요 입력 창과 버튼을 Box로 감싸서 레이아웃 조정
-        // 이 Box에 weight를 주어 남은 공간을 차지하게 하고, 내부 OutlinedTextField도 스크롤 가능하게 함
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f) // 남은 세로 공간의 일정 비율을 차지 (아래 결과 영역과 나눠 가짐)
+                .weight(1f)
         ) {
             OutlinedTextField(
                 value = originalText,
                 onValueChange = { originalText = it },
                 label = { Text("여기에 전체 텍스트를 입력하세요...") },
                 modifier = Modifier
-                    .fillMaxSize() // Box 내에서 사용 가능한 모든 공간 차지
-                    .verticalScroll(rememberScrollState()), // 입력 창 스크롤 가능하게 설정
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
             )
 
-            // 입력 창 우측 하단에 Clean 버튼 추가 (기존 버튼 대체 및 기능 추가)
             Button(
                 onClick = {
-                    // 모든 텍스트 필드를 지우는 기능 추가
                     targetWord = ""
                     replacement = ""
                     originalText = ""
@@ -91,32 +86,30 @@ fun WordReplacerApp() {
                     Toast.makeText(context, "모든 입력값이 지워졌습니다.", Toast.LENGTH_SHORT).show()
                 },
                 modifier = Modifier
-                    .align(Alignment.BottomEnd) // 우측 하단에 정렬
-                    .padding(8.dp) // 버튼과 OutlinedTextField 경계 사이에 패딩 추가
+                    .align(Alignment.BottomEnd)
+                    .padding(8.dp)
             ) {
-                Text("Clean") // 버튼 텍스트를 "Clean"으로 변경
+                Text("Clean")
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Action 버튼들을 가로로 배치하기 위해 Row 사용
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround // 버튼들 사이에 공간 고르게 분배
+            horizontalArrangement = Arrangement.SpaceAround
         ) {
             Button(
                 onClick = {
                     replacedText = originalText.replace(targetWord, replacement)
                 },
-                modifier = Modifier.weight(1f) // 버튼이 Row 공간을 동일하게 나눠 가지도록 설정
+                modifier = Modifier.weight(1f)
             ) {
                 Text("단어 대체")
             }
 
-            Spacer(modifier = Modifier.width(8.dp)) // 버튼 사이 간격 (height 대신 width 사용)
+            Spacer(modifier = Modifier.width(8.dp))
 
-            // 클립보드 복사 버튼
             Button(
                 onClick = {
                     if (replacedText.isNotEmpty()) {
@@ -129,8 +122,8 @@ fun WordReplacerApp() {
                         Toast.makeText(context, "복사할 내용이 없습니다.", Toast.LENGTH_SHORT).show()
                     }
                 },
-                modifier = Modifier.weight(1f), // 버튼이 Row 공간을 동일하게 나눠 가지도록 설정
-                enabled = replacedText.isNotEmpty() // 결과 텍스트가 있을 때만 버튼 활성화
+                modifier = Modifier.weight(1f),
+                enabled = replacedText.isNotEmpty()
             ) {
                 Text("결과 복사")
             }
@@ -138,20 +131,18 @@ fun WordReplacerApp() {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 결과 값 출력 및 수정 가능 영역
-        if (true) { // replacedText.isNotEmpty() 조건 삭제, 항상 결과 영역 표시
-            Text("결과:", fontSize = 18.sp, style = MaterialTheme.typography.headlineSmall)
-            // 결과 내용을 스크롤 가능하며 수정 가능하게 변경
-            OutlinedTextField(
-                value = replacedText, // 결과 값을 OutlinedTextField의 값으로 사용
-                onValueChange = { replacedText = it }, // 사용자가 수정하면 replacedText 업데이트
-                label = { Text("수정 가능한 결과") }, // 라벨 추가
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-                    .verticalScroll(rememberScrollState()) // 결과 영역 스크롤 가능하도록 설정
-                    .weight(1f), // 남은 세로 공간의 일정 비율을 차지
-            )
-        }
+        // 조건 없이 항상 결과 영역 표시
+        Text("결과:", fontSize = 18.sp, style = MaterialTheme.typography.headlineSmall)
+
+        OutlinedTextField(
+            value = replacedText,
+            onValueChange = { replacedText = it },
+            label = { Text("수정 가능한 결과") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+                .verticalScroll(rememberScrollState())
+                .weight(1f),
+        )
     }
 }
