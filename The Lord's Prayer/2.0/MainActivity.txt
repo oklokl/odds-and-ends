@@ -1,0 +1,42 @@
+package com.krdondon.thelordsprayer
+
+import android.media.MediaPlayer
+import android.os.Bundle
+import android.widget.Button
+import androidx.appcompat.app.AppCompatActivity
+
+class MainActivity : AppCompatActivity() {
+    private var mediaPlayer: MediaPlayer? = null
+    private lateinit var playButton: Button
+    private lateinit var pauseButton: Button
+    private lateinit var stopButton: Button
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        playButton = findViewById(R.id.playButton)
+        pauseButton = findViewById(R.id.pauseButton)
+        stopButton = findViewById(R.id.stopButton)
+
+        mediaPlayer = MediaPlayer.create(this, R.raw.prayer_0815).apply {
+            isLooping = true // 무한 반복
+        }
+
+        playButton.setOnClickListener { mediaPlayer?.start() }
+        pauseButton.setOnClickListener { mediaPlayer?.pause() }
+        stopButton.setOnClickListener {
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+            mediaPlayer = MediaPlayer.create(this, R.raw.prayer_0815).apply {
+                isLooping = true
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        mediaPlayer?.release()
+        mediaPlayer = null
+        super.onDestroy()
+    }
+}
