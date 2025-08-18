@@ -1,0 +1,4 @@
+ic_pause
+ic_play_arrow
+ic_stop
+Vector A.. 로 만들어서 아이콘 하나씩 만들고 이름 바꾸기
