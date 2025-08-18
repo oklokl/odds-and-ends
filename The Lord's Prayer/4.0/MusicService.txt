@@ -1,0 +1,200 @@
+package com.krdondon.thelordsprayer
+
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
+import android.content.Intent
+import android.media.MediaPlayer
+import android.os.Build
+import android.os.IBinder
+import android.support.v4.media.MediaMetadataCompat
+import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
+import androidx.core.app.NotificationCompat
+import androidx.media.session.MediaButtonReceiver
+import androidx.media.app.NotificationCompat as MediaNotificationCompat // 충돌 해결을 위한 별칭
+
+class MusicService : Service() {
+
+    private var mediaPlayer: MediaPlayer? = null
+    private lateinit var mediaSession: MediaSessionCompat
+
+    companion object {
+        const val CHANNEL_ID = "MusicServiceChannel"
+        const val ACTION_PLAY = "com.krdondon.thelordsprayer.ACTION_PLAY"
+        const val ACTION_PAUSE = "com.krdondon.thelordsprayer.ACTION_PAUSE"
+        const val ACTION_STOP = "com.krdondon.thelordsprayer.ACTION_STOP"
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+
+        // MediaSession 초기화
+        mediaSession = MediaSessionCompat(this, "MusicService").apply {
+            setFlags(
+                MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or
+                        MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS
+            )
+            setPlaybackState(
+                PlaybackStateCompat.Builder()
+                    .setActions(
+                        PlaybackStateCompat.ACTION_PLAY or
+                                PlaybackStateCompat.ACTION_PAUSE or
+                                PlaybackStateCompat.ACTION_PLAY_PAUSE or
+                                PlaybackStateCompat.ACTION_STOP
+                    )
+                    .build()
+            )
+            setCallback(object : MediaSessionCompat.Callback() {
+                override fun onPlay() {
+                    startPlayback()
+                }
+
+                override fun onPause() {
+                    pausePlayback()
+                }
+
+                override fun onStop() {
+                    stopPlayback()
+                }
+            })
+            // 메타데이터 설정: 알림에 곡 정보가 표시되도록 할 수 있습니다.
+            // 필요에 따라 주석을 해제하고 곡 정보를 입력하세요.
+            setMetadata(
+                MediaMetadataCompat.Builder()
+                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "주님의 기도")
+                    .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "예수")
+                    .build()
+            )
+            isActive = true // 미디어 세션을 활성화합니다.
+        }
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // MediaButtonReceiver를 사용하여 미디어 버튼 이벤트를 처리합니다.
+        // 예를 들어, 헤드셋 버튼을 눌렀을 때 재생/일시정지 등의 동작을 할 수 있게 합니다.
+        MediaButtonReceiver.handleIntent(mediaSession, intent)
+
+        when (intent?.action) {
+            ACTION_PLAY -> startPlayback()
+            ACTION_PAUSE -> pausePlayback()
+            ACTION_STOP -> stopPlayback()
+        }
+        // START_NOT_STICKY: 서비스가 강제 종료되어도 자동 재시작하지 않습니다.
+        // 필요에 따라 START_STICKY (시스템이 서비스를 다시 생성) 등으로 변경할 수 있습니다.
+        return START_NOT_STICKY
+    }
+
+    private fun startPlayback() {
+        if (mediaPlayer == null) {
+            // MediaPlayer가 없으면 새로 생성하고 음악 파일을 로드합니다.
+            mediaPlayer = MediaPlayer.create(this, R.raw.prayer_0815).apply {
+                isLooping = true // 연속 재생 설정
+            }
+        }
+        mediaPlayer?.start() // 음악 재생 시작
+        updatePlaybackState(PlaybackStateCompat.STATE_PLAYING) // 재생 상태 업데이트
+        // 포그라운드 서비스 시작 및 알림 표시 (ID는 1)
+        startForeground(1, createNotification())
+    }
+
+    private fun pausePlayback() {
+        mediaPlayer?.pause() // 음악 일시정지
+        updatePlaybackState(PlaybackStateCompat.STATE_PAUSED) // 재생 상태 업데이트
+        // 알림 업데이트 (재생/일시정지 아이콘 변경을 위해)
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(1, createNotification())
+        // pausePlayback 시 stopForeground(false)를 호출하여 알림은 유지하되, 포그라운드 서비스 상태는 해제합니다.
+        // 이렇게 하면 음악이 일시정지되었을 때 서비스의 중요도가 낮아집니다.
+        stopForeground(false)
+    }
+
+    private fun stopPlayback() {
+        mediaPlayer?.stop() // 음악 정지
+        mediaPlayer?.release() // MediaPlayer 리소스 해제
+        mediaPlayer = null // MediaPlayer 객체 초기화
+        updatePlaybackState(PlaybackStateCompat.STATE_STOPPED) // 재생 상태 업데이트
+        // stopForeground(true): 포그라운드 서비스 중지 및 알림 제거
+        stopForeground(true)
+        stopSelf() // 서비스 종료
+    }
+
+    // 미디어 세션의 재생 상태를 업데이트하는 도우미 함수
+    private fun updatePlaybackState(state: Int) {
+        val playbackState = PlaybackStateCompat.Builder()
+            .setActions(
+                PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PAUSE or
+                        PlaybackStateCompat.ACTION_PLAY_PAUSE or PlaybackStateCompat.ACTION_STOP
+            )
+            // 현재 재생 상태와 위치, 재생 속도(여기서는 1.0f)를 설정합니다.
+            .setState(state, mediaPlayer?.currentPosition?.toLong() ?: 0, 1.0f)
+            .build()
+        mediaSession.setPlaybackState(playbackState)
+    }
+
+    private fun createNotification(): Notification {
+        // 알림 채널 생성 (안드로이드 8.0 오레오 이상 필수)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val serviceChannel = NotificationChannel(
+                CHANNEL_ID,
+                getString(R.string.notification_channel_name), // strings.xml에 정의된 문자열 리소스 사용
+                NotificationManager.IMPORTANCE_LOW // 알림 중요도 설정
+            )
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(serviceChannel)
+        }
+
+        val isPlaying = mediaPlayer?.isPlaying ?: false
+        val playPauseIcon = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play_arrow
+        val playPauseAction = if (isPlaying) ACTION_PAUSE else ACTION_PLAY
+        val playPauseText = if (isPlaying) R.string.notification_pause_action else R.string.notification_play_action
+
+        // 재생/일시정지 버튼에 대한 PendingIntent
+        val playPauseIntent = Intent(this, MusicService::class.java).setAction(playPauseAction)
+        val pendingPlayPauseIntent = PendingIntent.getService(this, 0, playPauseIntent, PendingIntent.FLAG_IMMUTABLE)
+
+        // 정지 버튼에 대한 PendingIntent
+        val stopIntent = Intent(this, MusicService::class.java).setAction(ACTION_STOP)
+        val pendingStopIntent = PendingIntent.getService(this, 0, stopIntent, PendingIntent.FLAG_IMMUTABLE)
+
+        // 알림 클릭 시 MainActivity를 열기 위한 Intent
+        val notificationIntent = Intent(this, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
+
+        // NotificationCompat.Builder를 사용하여 알림을 생성합니다.
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(getString(R.string.notification_title)) // 알림 제목
+            .setContentText(getString(R.string.notification_text)) // 알림 내용
+            .setSmallIcon(R.drawable.ic_play_arrow) // 작은 아이콘 (필수)
+            .setContentIntent(pendingIntent) // 알림 클릭 시 실행될 인텐트
+            .setPriority(NotificationCompat.PRIORITY_LOW) // 알림 우선순위
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC) // 잠금 화면에서 알림 내용 표시 여부
+            // 재생/일시정지 버튼 추가
+            .addAction(playPauseIcon, getString(playPauseText), pendingPlayPauseIntent)
+            // 정지 버튼 추가
+            .addAction(R.drawable.ic_stop, getString(R.string.notification_stop_action), pendingStopIntent)
+            // MediaStyle을 적용하여 미디어 컨트롤러처럼 보이게 합니다.
+            .setStyle(
+                MediaNotificationCompat.MediaStyle()
+                    .setMediaSession(mediaSession.sessionToken) // 미디어 세션 토큰 연결
+                    .setShowActionsInCompactView(0, 1) // 콤팩트 뷰에 표시할 액션 버튼 인덱스 (0: 재생/일시정지, 1: 정지)
+            )
+        // 알림이 삭제되지 않도록 설정 (사용자가 스와이프해도 사라지지 않음)
+        // .setOngoing(true) // 필요하다면 이 줄의 주석을 해제하세요.
+
+        return builder.build()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mediaPlayer?.release() // MediaPlayer 리소스 해제
+        mediaPlayer = null
+        mediaSession.release() // MediaSession 리소스 해제
+    }
+
+    override fun onBind(intent: Intent?): IBinder? {
+        return null // 이 서비스는 Bound Service가 아니므로 null을 반환합니다.
+    }
+}
