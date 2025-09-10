@@ -1,0 +1,9 @@
+res/raw
+prayer_a_1.mp3
+prayer_a_2.mp3
+prayer_a_3.mp3
+prayer_a_4.mp3
+prayer_b_1.mp3
+prayer_b_2.mp3
+prayer_b_3.mp3
+prayer_b_4.mp3
