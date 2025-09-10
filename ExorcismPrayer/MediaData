@@ -1,0 +1,169 @@
+package com.krdondon.exorcismprayer
+
+import androidx.annotation.RawRes
+
+data class MediaItem(
+    val title: String,
+    @RawRes val resourceId: Int,
+    val description: String
+)
+
+val mediaList = listOf(
+    MediaItem(
+        "공식 구마경",
+        R.raw.prayer_a_1,
+        "예수 그리스도의 이름으로 명하노니, 사탄아! 악령아! 물러가라!"
+    ),
+    MediaItem(
+        "공식 구마경 번역",
+        R.raw.prayer_a_2,
+        """
+        영광스러운 하늘 군대의 장수이신 성 미카엘 대천사여,
+        우리에게 맞서는 권세들과 세력들,
+        어둠의 세상 지배자들과 높은 곳의 사악한 영들에 대항하는 전투에서
+        저희를 지켜 주소서.
+
+        하느님께서 당신의 모습과 모상대로 창조하시고,
+        악마의 폭정에서 큰 대가로 구속하신 사람들을
+        도우러 오소서.
+
+        거룩한 교회는 당신을 수호자이자 수호성인으로 공경하며,
+        주님께서는 구속받은 이들의 영혼들을
+        천상의 행복으로 인도하도록 당신께 맡기셨습니다.
+
+        평화의 하느님께 간구하시어
+        사탄을 우리 발아래 짓밟아,
+        그가 더 이상 사람들을 포로로 잡아두지 못하게 하시고
+        교회를 해치지 못하게 하소서.
+
+        지극히 높으신 분 앞에 우리의 기도를 드려,
+        주님의 자비가 신속히 우리에게 임하게 하시고,
+        옛 뱀, 곧 악마요 사탄인 그 용을 붙잡아 사슬에 묶어 심연으로 던져,
+        다시는 민족들을 속이지 못하게 하소서.
+
+        아멘.
+        """.trimIndent()
+    ),
+    MediaItem(
+        "예수 성심께 바라는 기도",
+        R.raw.prayer_a_3,
+        """
+        오, 지극히 거룩하신 예수 성심이시여,
+        저희를 보호해주시는 당신의 손안에 저희의 마음을 바치나이다.
+        저희는 잠깐 동안만이라도 죄의 더러움을 씻어내지 못하는 연약한 영혼이오니,
+        우리를 사랑하시고, 보호해주시는 당신의 손안에서, 사탄과 그 부하들의 침입에서
+        이 연약한 영혼을 지켜주시는 당신의 영광에 저희 영혼을 맡기고 바라나이다.
+        아멘
+        """.trimIndent()
+    ),
+    MediaItem(
+        "공식구마경 원본",
+        R.raw.prayer_a_4,
+        """
+        Princeps gloriosissime caelestis militiae, sancte Michael Archangele, defende nos in proelio adversus principes et potestates, adversus mundi rectores tenebrarum, contra spiritualia nequitiae, in caelestibus.
+        Veni in auxilium hominum, quos Deus ad imaginem similitudinis suae fecit, et a tyrannide diaboli emit pretio magno.
+        Te custodem et patronum sancta veneratur Ecclesia; tibi tradidit Dominus animas redemptorum in superna felicitate locandas.
+        Deprecare Deum pacis, ut conterat Satanam sub pedibus nostris, ne ultra valeat captivos tenere homines, et Ecclesiae nocere.
+        Offer nostras preces in conspectu Altissimi, ut cito anticipent nos misericordiae Domini, et apprehendas draconem, serpentem antiquum, qui est diabolus et Satanas, et ligatum mittas in abyssum, ut non seducat amplius gentes. Amen.
+        """.trimIndent()
+    ),
+    MediaItem(
+        "성 미카엘 대천사께 드리는 기도",
+        R.raw.prayer_b_1,
+        """
+        가장 영광스러운 하늘 군대의 장수,
+        성 미카엘 대천사여,
+        저희를 권세와 세력들,
+        어둠의 세상 지배자들,
+        높은 곳의 사악한 영들에 맞서는 싸움에서 지켜 주소서.
+
+        하느님께서 당신 모상대로 창조하시고,
+        큰 대가로 악마의 폭정에서 구속하신 인간들을 도우소서.
+
+        거룩한 교회는 당신을 수호자요 보호자로 공경합니다.
+        주님께서는 구속받은 영혼들을 하늘로 인도하도록 당신께 맡기셨습니다.
+
+        그러니 평화의 하느님께 빌어
+        사탄을 우리 발아래 짓밟아,
+        그가 더 이상 사람들을 사로잡아 두지 못하고
+        교회를 해치지 못하게 하소서.
+
+        저희 기도를 지극히 높으신 분께 올리시어,
+        주님의 자비가 속히 임하게 하시고,
+        옛 뱀, 곧 악마요 사탄인 그 용을 붙잡아 사슬에 묶어
+        심연 속으로 던져, 다시는 민족들을 속이지 못하게 하소서.
+        아멘.
+        """.trimIndent()
+    ),
+    MediaItem(
+        "구마 기도 (사제의 선포)",
+        R.raw.prayer_b_2,
+        """
+        우리의 하느님이요 주님이신 예수 그리스도의 이름으로,
+        원죄 없으신 성모 마리아, 천주의 성모의 전구와,
+        복되신 미카엘 대천사와 사도 베드로와 바오로,
+        그리고 모든 성인들의 전구에 힘입어,
+        우리 사제직의 거룩한 권능으로 담대히 선포하노니:
+
+        “하느님이 일어나시니 그분의 원수들은 흩어지고,
+        그분을 미워하는 자들은 그 앞에서 달아난다.
+        연기가 몰려가듯 그들이 몰려가고,
+        불 앞에서 밀랍이 녹듯,
+        하느님 앞에서 악인들이 사라진다.”
+
+        ✝ 보라, 주님의 십자가!
+        적들의 무리여, 물러가라.
+        ✝ 유다 지파의 사자, 다윗의 후손께서 승리하셨도다.
+
+        주님, 자비를 베푸소서.
+        당신께 바라는 저희의 희망만큼 자비를 베푸소서.
+        아멘
+        """.trimIndent()
+    ),
+    MediaItem(
+        "사탄과 악령에 대한 명령",
+        R.raw.prayer_b_3,
+        """
+        “예수 그리스도의 이름과 권능으로 명하노니,
+        너희가 누구든, 교회와 하느님의 모상대로 창조되고
+        그리스도의 보혈로 구속받은 영혼들에서 떠나라!
+
+        교활한 뱀아,
+        다시는 인류를 속이거나, 교회를 박해하거나,
+        하느님의 선택된 이들을 괴롭히지 못할 것이다.
+
+        가장 높으신 하느님께서 너에게 명하시느니라!
+        성부 하느님, 성자 하느님, 성령 하느님께서 명하시느니라!
+        강생하신 하느님의 말씀, 예수 그리스도께서 명하시느니라!
+
+        ✝ 거룩한 십자가의 표지가 너를 명하느니라.
+        ✝ 하느님의 어머니, 동정 마리아께서 너를 명하느니라.
+        ✝ 사도들의 신앙이 너를 명하느니라.
+        ✝ 순교자들의 피와 모든 성인들의 전구가 너를 명하느니라.
+
+        저주받은 용아, 사탄아,
+        살아계신 하느님, 참되신 하느님, 거룩하신 하느님의 이름으로 너에게 명하노니,
+        인류를 속이지 말고, 교회를 해치지 말라.
+        그리스도의 피로 사신 거룩하고 보편된 교회에 자리를 내어주라.”
+        """.trimIndent()
+    ),
+    MediaItem(
+        "마침 기도",
+        R.raw.prayer_b_4,
+        """
+        주님, 제 기도를 들으소서.
+        저의 부르짖음이 당신께 이르게 하소서.
+
+        기도합시다.
+        하늘과 땅의 하느님, 천사와 대천사의 하느님,
+        족장들의 하느님, 예언자들의 하느님, 사도들의 하느님,
+        순교자들과 동정들의 하느님,
+        죽은 뒤에 생명을 주시고 수고 뒤에 안식을 주시는 하느님,
+        당신만이 참되신 하느님이시니,
+        저희를 악한 영들의 올무와 간계와 폭력에서 구하소서.
+
+        저희 주 예수 그리스도를 통하여 비나이다.
+        아멘.
+        """.trimIndent()
+    ),
+)
