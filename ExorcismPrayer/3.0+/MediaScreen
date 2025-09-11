@@ -1,0 +1,153 @@
+package com.krdondon.exorcismprayer
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.session.MediaController
+
+@Composable
+fun MediaScreen(
+    mediaController: MediaController,
+    currentMediaIndex: Int,
+    onMediaIndexChange: (Int) -> Unit,
+    isPlaying: Boolean,
+    onIsPlayingChange: (Boolean) -> Unit
+) {
+    val backgroundColor = Color(ContextCompat.getColor(LocalContext.current, R.color.background_color))
+
+    LaunchedEffect(mediaController) {
+        mediaController.repeatMode = Player.REPEAT_MODE_ONE
+        if (mediaController.mediaItemCount == 0) {
+            mediaController.setMediaItems(
+                mediaList.map {
+                    MediaItem.Builder()
+                        .setMediaId(it.resourceId.toString())
+                        .setUri("android.resource://com.krdondon.exorcismprayer/${it.resourceId}")
+                        .setMediaMetadata(
+                            androidx.media3.common.MediaMetadata.Builder()
+                                .setTitle(it.title)
+                                .setDescription(it.description)
+                                .build()
+                        )
+                        .build()
+                }
+            )
+            mediaController.prepare()
+        }
+    }
+
+    // 오디오 재생 상태에 따라 UI를 업데이트
+    val scrollState = rememberScrollState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(color = backgroundColor),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+
+        Column(
+            modifier = Modifier
+                .padding(24.dp)
+                .fillMaxWidth()
+                .weight(1f, fill = false),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 24.dp)
+                    .background(Color.White, shape = RoundedCornerShape(12.dp))
+                    .height(56.dp)
+                    .wrapContentSize(Alignment.Center)
+            ) {
+                Text(
+                    text = mediaList.getOrNull(currentMediaIndex)?.title ?: "",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .background(Color.White, shape = RoundedCornerShape(12.dp))
+                    .padding(16.dp)
+                    .verticalScroll(scrollState)
+            ) {
+                Text(
+                    text = mediaList.getOrNull(currentMediaIndex)?.description ?: "",
+                    color = Color.Black,
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Start
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 50.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Button(
+                onClick = {
+                    if (currentMediaIndex > 0) {
+                        onMediaIndexChange(currentMediaIndex - 1)
+                        mediaController.seekToPrevious()
+                    }
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(60.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+            ) { Text("이전", color = Color.Black) }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Button(
+                onClick = {
+                    if (isPlaying) mediaController.pause() else mediaController.play()
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(60.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+            ) { Text(if (isPlaying) "정지" else "재생", color = Color.Black) }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Button(
+                onClick = {
+                    if (currentMediaIndex < mediaList.size - 1) {
+                        onMediaIndexChange(currentMediaIndex + 1)
+                        mediaController.seekToNext()
+                    }
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(60.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+            ) { Text("다음", color = Color.Black) }
+        }
+    }
+}
