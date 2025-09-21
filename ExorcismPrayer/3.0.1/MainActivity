@@ -1,0 +1,128 @@
+package com.krdondon.exorcismprayer
+
+import android.content.ComponentName
+import android.content.Intent
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
+import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.MoreExecutors
+import com.krdondon.exorcismprayer.ui.theme.ExorcismPrayerTheme
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
+
+class MainActivity : ComponentActivity() {
+
+    private var mediaControllerFuture: ListenableFuture<MediaController>? = null
+    private var mediaController: MediaController? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+
+        val serviceIntent = Intent(this, PlaybackService::class.java)
+        ContextCompat.startForegroundService(this, serviceIntent)
+
+        setContent {
+            var mediaControllerState by remember { mutableStateOf<MediaController?>(null) }
+            var currentMediaIndex by remember { mutableIntStateOf(0) }
+            var isPlaying by remember { mutableStateOf(false) }
+
+            val lifecycleObserver = remember {
+                LifecycleEventObserver { _, event ->
+                    when (event) {
+                        Lifecycle.Event.ON_START -> {
+                            val sessionToken = SessionToken(this@MainActivity, ComponentName(this@MainActivity, PlaybackService::class.java))
+                            mediaControllerFuture = MediaController.Builder(this@MainActivity, sessionToken).buildAsync()
+                            mediaControllerFuture?.addListener({
+                                mediaController = mediaControllerFuture?.get()
+                                mediaControllerState = mediaController
+
+                                mediaController?.let { controller ->
+                                    isPlaying = controller.isPlaying
+                                    currentMediaIndex = controller.currentMediaItemIndex
+                                }
+                            }, MoreExecutors.directExecutor())
+                        }
+                        Lifecycle.Event.ON_STOP -> {
+                            mediaControllerFuture?.let {
+                                MediaController.releaseFuture(it)
+                                mediaControllerFuture = null
+                            }
+                            mediaController = null
+                            mediaControllerState = null
+                        }
+                        else -> {}
+                    }
+                }
+            }
+
+            DisposableEffect(lifecycleObserver) {
+                this@MainActivity.lifecycle.addObserver(lifecycleObserver)
+                onDispose {
+                    this@MainActivity.lifecycle.removeObserver(lifecycleObserver)
+                }
+            }
+
+            LaunchedEffect(mediaControllerState) {
+                val controller = mediaControllerState
+                if (controller != null) {
+                    val listener = object : Player.Listener {
+                        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                            currentMediaIndex = controller.currentMediaItemIndex
+                        }
+                        override fun onIsPlayingChanged(isPlayingNow: Boolean) {
+                            isPlaying = isPlayingNow
+                        }
+                    }
+                    controller.addListener(listener)
+                }
+            }
+
+            ExorcismPrayerTheme {
+                if (mediaControllerState != null) {
+                    MediaScreen(
+                        mediaController = mediaControllerState!!,
+                        currentMediaIndex = currentMediaIndex,
+                        onMediaIndexChange = { newIndex ->
+                            // `seekTo` 함수는 Int와 Long 타입을 모두 받음.
+                            // `newIndex`는 이미 Int 타입이므로 그대로 전달
+                            // 시작 위치 0L는 Long 타입으로 명시
+                            mediaControllerState?.seekTo(newIndex, 0L)
+                        },
+                        isPlaying = isPlaying,
+                        onIsPlayingChange = { nowPlaying ->
+                            if (nowPlaying) mediaControllerState?.play() else mediaControllerState?.pause()
+                        }
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("준비 중...", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        stopService(Intent(this, PlaybackService::class.java))
+        super.onDestroy()
+    }
+}
