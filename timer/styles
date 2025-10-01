@@ -1,0 +1,10 @@
+<resources>
+    <!-- 알람 풀스크린 전용 테마 -->
+    <style name="Theme.Timer.FullScreen" parent="Theme.Material3.Light.NoActionBar">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <item name="android:showWhenLocked">true</item>
+        <item name="android:turnScreenOn">true</item>
+        <item name="android:windowAllowReturnTransitionOverlap">true</item>
+    </style>
+</resources>
