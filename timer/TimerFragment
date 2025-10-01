@@ -1,0 +1,377 @@
+package com.krdonon.timer
+
+import android.app.AlarmManager
+import android.app.KeyguardManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.os.Bundle
+import android.os.CountDownTimer
+import android.os.Handler
+import android.os.Looper
+import android.text.InputType
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.commit
+import androidx.lifecycle.ViewModelProvider
+import com.krdonon.timer.alarm.AlarmReceiver
+import com.krdonon.timer.alarm.AlarmService
+import java.util.Calendar
+import java.util.Locale
+import java.util.concurrent.TimeUnit
+
+class TimerFragment : Fragment() {
+
+    private lateinit var timerText: TextView
+    private lateinit var currentTimeText: TextView
+    private lateinit var nextTimeText: TextView
+    private lateinit var btnStart: Button
+    private lateinit var btnReset: Button
+    private lateinit var btnAdd: Button
+    private lateinit var btn10: Button
+    private lateinit var btn15: Button
+    private lateinit var btn30: Button
+    private lateinit var extraTimersContainer: LinearLayout
+
+    private val handler = Handler(Looper.getMainLooper())
+    private var ticker: Runnable? = null
+
+    private var timeLeftInMillis: Long = 0L
+    private var mainTimer: CountDownTimer? = null
+    private var running = false
+
+    private lateinit var viewModel: TimerViewModel
+
+    // ===== AlarmManager 예약 관련 =====
+    private val alarmRequestCode = 10011
+    private fun alarmPendingIntent(label: String = "메인 타이머"): PendingIntent {
+        val intent = Intent(requireContext(), AlarmReceiver::class.java).apply {
+            putExtra(AlarmService.EXTRA_LABEL, label)
+        }
+        return PendingIntent.getBroadcast(
+            requireContext(),
+            alarmRequestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun scheduleExactAlarm(triggerAtMillis: Long, label: String = "메인 타이머") {
+        val am = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val pi = alarmPendingIntent(label)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (am.canScheduleExactAlarms()) {
+                    am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
+                } else {
+                    am.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
+                }
+            } else {
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
+            }
+        } catch (_: SecurityException) {
+            am.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
+        }
+    }
+
+    private fun cancelExactAlarm() {
+        val am = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        am.cancel(alarmPendingIntent())
+    }
+    // ================================
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View {
+        val v = inflater.inflate(R.layout.fragment_timer, container, false)
+
+        viewModel = ViewModelProvider(requireActivity())[TimerViewModel::class.java]
+
+        timerText = v.findViewById(R.id.timerText)
+        currentTimeText = v.findViewById(R.id.currentTimeText)
+        nextTimeText = v.findViewById(R.id.nextTimeText)
+        btnStart = v.findViewById(R.id.btnStartTimer)
+        btnReset = v.findViewById(R.id.btnResetTimer)
+        btnAdd   = v.findViewById(R.id.btnAddTimer)
+
+        btn10 = v.findViewById(R.id.btnPreset10)
+        btn15 = v.findViewById(R.id.btnPreset15)
+        btn30 = v.findViewById(R.id.btnPreset30)
+        extraTimersContainer = v.findViewById(R.id.extraTimersContainer)
+
+        parentFragmentManager.setFragmentResultListener("numberPadResult", viewLifecycleOwner) { _, bundle ->
+            val targetAt = bundle.getLong("targetAt", -1L)
+            val dur = bundle.getLong("duration", -1L)
+            when {
+                targetAt > 0L -> setTargetAt(targetAt)
+                dur >= 0L     -> setTargetTime(dur)
+            }
+        }
+
+        ticker = object : Runnable {
+            override fun run() {
+                updateNow()
+                handler.postDelayed(this, 100L)
+            }
+        }
+        handler.post(ticker!!)
+
+        val goInput: (View) -> Unit = {
+            parentFragmentManager.commit {
+                replace(R.id.fragment_container, NumberPadFragment())
+                addToBackStack(null)
+            }
+        }
+        timerText.setOnClickListener(goInput)
+        nextTimeText.setOnClickListener(goInput)
+
+        btn10.setOnClickListener { setDurationAndPreview(TimeUnit.MINUTES.toMillis(10)) }
+        btn15.setOnClickListener { setDurationAndPreview(TimeUnit.MINUTES.toMillis(15)) }
+        btn30.setOnClickListener { setDurationAndPreview(TimeUnit.MINUTES.toMillis(30)) }
+
+        btnStart.setOnClickListener { if (running) pauseMain() else startMain() }
+        btnReset.setOnClickListener { resetMain() }
+        btnAdd.setOnClickListener   { addNewBlock(timeLeftInMillis) }
+
+        restoreBlockTimersUI()
+
+        timerText.text = formatDuration4(0L)
+        nextTimeText.text = getString(R.string.next_time_prefix, formatDuration4(0L))
+        btnStart.text = getString(R.string.btn_start)
+
+        return v
+    }
+
+    /** 🔕 잠금 해제 후 '타이머 화면으로 돌아왔을 때만' 자동 정지 */
+    override fun onResume() {
+        super.onResume()
+
+        val prefs = requireContext().getSharedPreferences(AlarmService.PREFS, Context.MODE_PRIVATE)
+        val isRinging = prefs.getBoolean(AlarmService.KEY_RINGING, false)
+        val startedFromKeyguard = prefs.getBoolean(AlarmService.KEY_STARTED_FROM_KEYGUARD, false)
+
+        val km = requireContext().getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+        val nowLocked = km.isKeyguardLocked
+
+        // 조건:
+        // 1) 지금 울리는 중이어야 하고
+        // 2) 알람이 '잠금 상태에서' 시작됐어야 하며
+        // 3) 지금은 더 이상 잠금이 아니어야(=해제 후 화면으로 돌아온 상황)
+        if (isRinging && startedFromKeyguard && !nowLocked) {
+            AlarmService.stop(requireContext())
+        }
+    }
+
+    /** -------- 보조 타이머 -------- */
+    private fun restoreBlockTimersUI() {
+        extraTimersContainer.removeAllViews()
+        viewModel.blocks.forEach { state ->
+            addBlockTimerViewFromState(state)
+        }
+    }
+
+    private fun addNewBlock(initialMillis: Long) {
+        if (initialMillis <= 0L) return
+        val state = BlockTimerState(label = "타이머", timeLeft = initialMillis, running = false)
+        viewModel.blocks.add(state)
+        addBlockTimerViewFromState(state)
+    }
+
+    private fun addBlockTimerViewFromState(state: BlockTimerState) {
+        val blockView = layoutInflater.inflate(R.layout.timer_block, extraTimersContainer, false)
+
+        val labelView = blockView.findViewById<TextView>(R.id.blockLabel)
+        val tv       = blockView.findViewById<TextView>(R.id.blockTimerText)
+        val btnStart = blockView.findViewById<Button>(R.id.blockStartBtn)
+        val btnDel   = blockView.findViewById<Button>(R.id.blockDeleteBtn)
+
+        labelView.text = state.label
+        tv.text = formatDuration4(state.timeLeft)
+        val block = BlockTimer(tv, btnStart, btnDel, labelView, state)
+
+        tv.setOnClickListener { setTargetTime(state.timeLeft) }
+
+        labelView.setOnClickListener { showRenameDialog(labelView) { newLabel ->
+            state.label = newLabel
+        } }
+
+        extraTimersContainer.addView(blockView)
+
+        if (state.running) block.start()
+    }
+
+    inner class BlockTimer(
+        private val tv: TextView,
+        private val startBtn: Button,
+        deleteBtn: Button,
+        private val labelView: TextView,
+        private val state: BlockTimerState
+    ) {
+        private var cd: CountDownTimer? = null
+
+        init {
+            startBtn.setOnClickListener { if (state.running) pause() else start() }
+            deleteBtn.setOnClickListener {
+                cancel()
+                viewModel.blocks.remove(state)
+                extraTimersContainer.removeView(tv.parent as View)
+            }
+            updateUi()
+        }
+
+        private fun updateUi() {
+            tv.text = formatDuration4(state.timeLeft)
+            startBtn.text = if (state.running) getString(R.string.btn_pause) else getString(R.string.btn_start)
+            labelView.text = state.label
+        }
+
+        fun start() {
+            if (state.timeLeft <= 0L) return
+            cd?.cancel()
+            cd = object : CountDownTimer(state.timeLeft, 10L) {
+                override fun onTick(ms: Long) {
+                    state.timeLeft = ms
+                    tv.text = formatDuration4(state.timeLeft)
+                }
+                override fun onFinish() {
+                    state.timeLeft = 0L
+                    state.running = false
+                    updateUi()
+                    AlarmService.start(requireContext(), state.label)
+                }
+            }.start()
+            state.running = true
+            updateUi()
+        }
+
+        fun pause() {
+            cd?.cancel()
+            state.running = false
+            updateUi()
+        }
+
+        fun cancel() {
+            cd?.cancel()
+            state.running = false
+        }
+    }
+
+    /** -------- 메인 타이머 -------- */
+    private fun setTargetAt(targetAtMillis: Long) {
+        timeLeftInMillis = (targetAtMillis - System.currentTimeMillis()).coerceAtLeast(0L)
+        updateMainTimerUI()
+    }
+
+    private fun setTargetTime(durationMillis: Long) {
+        timeLeftInMillis = durationMillis.coerceAtLeast(0L)
+        updateMainTimerUI()
+    }
+
+    private fun setDurationAndPreview(durationMillis: Long) {
+        timeLeftInMillis = durationMillis.coerceAtLeast(0L)
+        updateMainTimerUI()
+    }
+
+    private fun startMain() {
+        if (timeLeftInMillis <= 0L) return
+
+        mainTimer?.cancel()
+        val triggerAt = System.currentTimeMillis() + timeLeftInMillis
+
+        // UI 표시용 카운트다운
+        mainTimer = object : CountDownTimer(timeLeftInMillis, 10L) {
+            override fun onTick(ms: Long) {
+                timeLeftInMillis = ms
+                updateMainTimerUI()
+            }
+            override fun onFinish() {
+                running = false
+                btnStart.text = getString(R.string.btn_start)
+                timerText.text = formatDuration4(0L)
+                nextTimeText.text = getString(R.string.next_time_prefix, formatDuration4(0L))
+                cancelExactAlarm() // 예약 제거
+                AlarmService.start(requireContext(), "메인 타이머")
+            }
+        }.start()
+
+        // OS 예약 (잠금/절전에서도 울리도록)
+        scheduleExactAlarm(triggerAt, "메인 타이머")
+
+        running = true
+        btnStart.text = getString(R.string.btn_pause)
+    }
+
+    private fun pauseMain() {
+        mainTimer?.cancel()
+        cancelExactAlarm()
+        running = false
+        btnStart.text = getString(R.string.btn_start)
+    }
+
+    private fun resetMain() {
+        mainTimer?.cancel()
+        cancelExactAlarm()
+        running = false
+        timeLeftInMillis = 0L
+        timerText.text = formatDuration4(0L)
+        btnStart.text = getString(R.string.btn_start)
+        nextTimeText.text = getString(R.string.next_time_prefix, formatDuration4(0L))
+    }
+
+    private fun updateMainTimerUI() {
+        timerText.text = formatDuration4(timeLeftInMillis)
+        nextTimeText.text = getString(R.string.next_time_prefix, formatDuration4(timeLeftInMillis))
+    }
+
+    /** -------- 공통 유틸 -------- */
+    private fun updateNow() {
+        val now = Calendar.getInstance()
+        val h = now.get(Calendar.HOUR_OF_DAY)
+        val m = now.get(Calendar.MINUTE)
+        val s = now.get(Calendar.SECOND)
+        val ms = now.get(Calendar.MILLISECOND) * 10
+        currentTimeText.text = String.format(Locale.getDefault(), "%02d:%02d:%02d:%04d", h, m, s, ms)
+    }
+
+    private fun formatDuration4(msTotal: Long): String {
+        val h = (msTotal / 3_600_000) % 100
+        val m = (msTotal / 60_000) % 60
+        val s = (msTotal / 1_000) % 60
+        val ms4 = (msTotal % 1_000) * 10
+        return String.format(Locale.getDefault(), "%02d:%02d:%02d:%04d", h, m, s, ms4)
+    }
+
+    private fun showRenameDialog(target: TextView, onRenamed: ((String) -> Unit)? = null) {
+        val input = EditText(requireContext()).apply {
+            inputType = InputType.TYPE_CLASS_TEXT
+            setText(target.text?.toString() ?: "")
+            setSelection(text.length)
+        }
+        AlertDialog.Builder(requireContext())
+            .setTitle("라벨 변경")
+            .setView(input)
+            .setPositiveButton("확인") { dlg, _ ->
+                val txt = input.text?.toString()?.ifBlank { "타이머" } ?: "타이머"
+                target.text = txt
+                onRenamed?.invoke(txt)
+                dlg.dismiss()
+            }
+            .setNegativeButton("취소") { dlg, _ -> dlg.dismiss() }
+            .show()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        mainTimer?.cancel()
+        cancelExactAlarm()
+        ticker?.let { handler.removeCallbacks(it) }
+    }
+}
