@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@android:color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="24dp"
+        android:paddingBottom="48dp"
+        android:gravity="center_horizontal">
+
+        <!-- 상단 버튼 영역 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="10dp">
+
+            <Button
+                android:id="@+id/btnTomorrow"
+                style="?attr/borderlessButtonStyle"
+                android:layout_width="100dp"
+                android:layout_height="48dp"
+                android:text="@string/label_tomorrow"/>
+
+            <Button
+                android:id="@+id/btnAmPm"
+                style="?attr/borderlessButtonStyle"
+                android:layout_width="100dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="12dp"
+                android:text="@string/label_am"/>
+        </LinearLayout>
+
+        <!-- 현재 시간 표시 -->
+        <TextView
+            android:id="@+id/nowOnPadText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/now_on_pad_text"
+            android:textSize="16sp"
+            android:textColor="#555555"
+            android:layout_marginBottom="10dp"/>
+
+        <!-- 시간 단위 라벨 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="2dp">
+
+            <TextView
+                android:id="@+id/lblH"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/label_hour"
+                android:textSize="14sp"
+                android:layout_marginEnd="42dp"/>
+
+            <TextView
+                android:id="@+id/lblM"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/label_minute"
+                android:textSize="14sp"
+                android:layout_marginEnd="42dp"/>
+
+            <TextView
+                android:id="@+id/lblS"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/label_second"
+                android:textSize="14sp"
+                android:layout_marginEnd="42dp"/>
+
+            <TextView
+                android:id="@+id/lblMS"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/label_thousandth"
+                android:textSize="14sp"/>
+        </LinearLayout>
+
+        <!-- 입력 시간 표시 -->
+        <TextView
+            android:id="@+id/inputTimeText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/zero_hhmmss_mmmm"
+            android:textSize="41sp"
+            android:fontFamily="monospace"
+            android:textColor="#424242"
+            android:layout_marginTop="4dp"/>
+
+        <!-- 숫자 키패드 -->
+        <GridLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:columnCount="3"
+            android:rowCount="4"
+            android:useDefaultMargins="true"
+            android:layout_marginTop="18dp">
+
+            <Button android:id="@+id/btn1" android:layout_width="88dp" android:layout_height="88dp" android:text="@string/digit_1" android:background="@drawable/circle_button" android:textColor="@android:color/white"/>
+            <Button android:id="@+id/btn2" android:layout_width="88dp" android:layout_height="88dp" android:text="@string/digit_2" android:background="@drawable/circle_button" android:textColor="@android:color/white"/>
+            <Button android:id="@+id/btn3" android:layout_width="88dp" android:layout_height="88dp" android:text="@string/digit_3" android:background="@drawable/circle_button" android:textColor="@android:color/white"/>
+
+            <Button android:id="@+id/btn4" android:layout_width="88dp" android:layout_height="88dp" android:text="@string/digit_4" android:background="@drawable/circle_button" android:textColor="@android:color/white"/>
+            <Button android:id="@+id/btn5" android:layout_width="88dp" android:layout_height="88dp" android:text="@string/digit_5" android:background="@drawable/circle_button" android:textColor="@android:color/white"/>
+            <Button android:id="@+id/btn6" android:layout_width="88dp" android:layout_height="88dp" android:text="@string/digit_6" android:background="@drawable/circle_button" android:textColor="@android:color/white"/>
+
+            <Button android:id="@+id/btn7" android:layout_width="88dp" android:layout_height="88dp" android:text="@string/digit_7" android:background="@drawable/circle_button" android:textColor="@android:color/white"/>
+            <Button android:id="@+id/btn8" android:layout_width="88dp" android:layout_height="88dp" android:text="@string/digit_8" android:background="@drawable/circle_button" android:textColor="@android:color/white"/>
+            <Button android:id="@+id/btn9" android:layout_width="88dp" android:layout_height="88dp" android:text="@string/digit_9" android:background="@drawable/circle_button" android:textColor="@android:color/white"/>
+
+            <Button android:id="@+id/btnDelete" android:layout_width="88dp" android:layout_height="88dp" android:text="@string/arrow_back" android:background="@drawable/circle_button" android:textColor="@android:color/white"/>
+            <Button android:id="@+id/btn0" android:layout_width="88dp" android:layout_height="88dp" android:text="@string/digit_0" android:background="@drawable/circle_button" android:textColor="@android:color/white"/>
+            <Button android:id="@+id/btnNext" android:layout_width="88dp" android:layout_height="88dp" android:text="@string/btn_next" android:background="@drawable/circle_button" android:textColor="@android:color/white"/>
+        </GridLayout>
+    </LinearLayout>
+</ScrollView>
