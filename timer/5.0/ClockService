@@ -1,0 +1,324 @@
+package com.krdonon.timer
+
+import android.Manifest
+import android.app.Notification
+import android.app.PendingIntent
+import android.app.Service
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import android.os.IBinder
+import android.os.SystemClock
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.TaskStackBuilder
+import androidx.core.content.ContextCompat
+import kotlinx.coroutines.*
+import java.util.Locale
+
+/**
+ * 타이머/스톱워치 진행 상황을 알림으로 보여주는 Foreground Service.
+ * - 타이머/스톱워치 각각 별도 알림 ID
+ * - 둘 다 실행 가능
+ * - 아무 것도 안 돌면 서비스 자동 종료
+ */
+class ClockService : Service() {
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    // Timer state
+    private var timerJob: Job? = null
+    private var timerEndElapsed: Long = 0L  // SystemClock.elapsedRealtime() 기준
+
+    // Stopwatch state
+    private var stopwatchJob: Job? = null
+    private var stopwatchBase: Long = 0L    // 경과: now - base
+
+    // Foreground 관리
+    private var isInForeground = false
+    private var foregroundLeader: Leader? = null
+
+    enum class Leader { TIMER, STOPWATCH }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            ACTION_START_TIMER -> {
+                val durationMs = intent.getLongExtra(EXTRA_DURATION_MS, 0L).coerceAtLeast(0L)
+                startTimer(durationMs)
+            }
+            ACTION_STOP_TIMER -> stopTimer()
+            ACTION_START_STOPWATCH -> {
+                val base = intent.getLongExtra(EXTRA_STOPWATCH_BASE, 0L)
+                startStopwatch(baseElapsed = base)
+            }
+            ACTION_STOP_STOPWATCH -> stopStopwatch()
+            ACTION_STOP_ALL -> {
+                stopTimer()
+                stopStopwatch()
+            }
+        }
+        return START_STICKY
+    }
+
+    override fun onDestroy() {
+        timerJob?.cancel()
+        stopwatchJob?.cancel()
+        scope.cancel()
+        super.onDestroy()
+    }
+
+    // region Timer
+
+    private fun startTimer(durationMs: Long) {
+        val now = SystemClock.elapsedRealtime()
+        timerEndElapsed = now + durationMs
+
+        // Foreground 선점 (없으면 Timer로 올림)
+        ensureForeground(Leader.TIMER)
+
+        timerJob?.cancel()
+        timerJob = scope.launch {
+            while (isActive) {
+                val remain = timerEndElapsed - SystemClock.elapsedRealtime()
+                if (remain <= 0L) {
+                    notifySafe(NID_TIMER, buildTimerNotification(0L))
+                    delay(500)
+                    cancelSafe(NID_TIMER)
+                    break
+                } else {
+                    notifySafe(NID_TIMER, buildTimerNotification(remain))
+                }
+                delay(100) // 0.1초 주기 업데이트
+            }
+            timerJob = null
+            onChannelPossiblyIdle()
+        }
+    }
+
+    private fun stopTimer() {
+        timerJob?.cancel()
+        timerJob = null
+        cancelSafe(NID_TIMER)
+        onChannelPossiblyIdle()
+    }
+
+    // endregion
+
+    // region Stopwatch
+
+    private fun startStopwatch(baseElapsed: Long = 0L) {
+        val now = SystemClock.elapsedRealtime()
+        stopwatchBase = now - baseElapsed
+
+        // Foreground 선점 (없으면 Stopwatch로 올림)
+        ensureForeground(Leader.STOPWATCH)
+
+        stopwatchJob?.cancel()
+        stopwatchJob = scope.launch {
+            while (isActive) {
+                val elapsed = SystemClock.elapsedRealtime() - stopwatchBase
+                notifySafe(NID_STOPWATCH, buildStopwatchNotification(elapsed))
+                delay(100) // 0.1초 주기 업데이트
+            }
+        }
+    }
+
+    private fun stopStopwatch() {
+        stopwatchJob?.cancel()
+        stopwatchJob = null
+        cancelSafe(NID_STOPWATCH)
+        onChannelPossiblyIdle()
+    }
+
+    // endregion
+
+    // region Foreground & notifications
+
+    private fun ensureForeground(preferred: Leader) {
+        if (!isInForeground) {
+            foregroundLeader = preferred
+            val initialNotification = when (preferred) {
+                Leader.TIMER -> buildTimerNotification(0L)
+                Leader.STOPWATCH -> buildStopwatchNotification(0L)
+            }
+            runCatching { startForeground(FOREGROUND_ID, initialNotification) }
+            isInForeground = true
+        }
+    }
+
+    private fun onChannelPossiblyIdle() {
+        val timerRunning = timerJob != null
+        val stopwatchRunning = stopwatchJob != null
+
+        when {
+            timerRunning && stopwatchRunning -> {
+                if (foregroundLeader == null) foregroundLeader = Leader.TIMER
+            }
+            timerRunning -> {
+                foregroundLeader = Leader.TIMER
+                runCatching {
+                    startForeground(
+                        FOREGROUND_ID,
+                        buildTimerNotification(
+                            (timerEndElapsed - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
+                        )
+                    )
+                }
+            }
+            stopwatchRunning -> {
+                foregroundLeader = Leader.STOPWATCH
+                runCatching {
+                    startForeground(
+                        FOREGROUND_ID,
+                        buildStopwatchNotification(
+                            SystemClock.elapsedRealtime() - stopwatchBase
+                        )
+                    )
+                }
+            }
+            else -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                } else {
+                    @Suppress("DEPRECATION")
+                    stopForeground(true)
+                }
+                isInForeground = false
+                foregroundLeader = null
+                stopSelf()
+            }
+        }
+    }
+
+    private fun buildTimerNotification(remainingMs: Long): Notification {
+        val content = "남은 시간: ${formatHMSms4(remainingMs)}"
+        return NotificationCompat.Builder(this, "timer_channel")
+            .setContentTitle("타이머")
+            .setContentText(content)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setContentIntent(mainPendingIntent())
+            .build()
+    }
+
+    private fun buildStopwatchNotification(elapsedMs: Long): Notification {
+        val content = "경과 시간: ${formatHMSms4(elapsedMs)}"
+        return NotificationCompat.Builder(this, "stopwatch_channel")
+            .setContentTitle("스톱워치")
+            .setContentText(content)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setContentIntent(mainPendingIntent())
+            .build()
+    }
+
+    private fun mainPendingIntent(): PendingIntent {
+        val open = Intent(this, com.krdonon.timer.MainActivity::class.java)
+        val stack = TaskStackBuilder.create(this).apply {
+            addNextIntentWithParentStack(open)
+        }
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        else
+            PendingIntent.FLAG_UPDATE_CURRENT
+        return stack.getPendingIntent(0, flags)!!
+    }
+
+    // ✅ 4자리(만분의 1초 표기)로 포맷
+    //    안드로이드의 시간 해상도는 ms(천분의 1초)이므로, 마지막 자리는 0이 됩니다.
+    private fun formatHMSms4(msInput: Long): String {
+        val ms = msInput.coerceAtLeast(0L)
+        val totalSec = ms / 1000
+        val h = totalSec / 3600
+        val m = (totalSec % 3600) / 60
+        val s = totalSec % 60
+        val tenTh = ((ms % 1000) * 10).toInt() // 0..9990 (마지막 자리 0)
+        return String.format(Locale.getDefault(), "%02d:%02d:%02d:%04d", h, m, s, tenTh)
+    }
+
+    // --- 안전하게 notify/cancel ---
+    private fun canPostNotifications(): Boolean {
+        return if (Build.VERSION.SDK_INT >= 33) {
+            ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+    }
+
+    private fun notifySafe(id: Int, notification: Notification) {
+        if (!canPostNotifications()) return
+        try {
+            NotificationManagerCompat.from(this).notify(id, notification)
+        } catch (se: SecurityException) {
+            se.printStackTrace()
+        }
+    }
+
+    private fun cancelSafe(id: Int) {
+        try {
+            NotificationManagerCompat.from(this).cancel(id)
+        } catch (se: SecurityException) {
+            se.printStackTrace()
+        }
+    }
+
+    // endregion
+
+    companion object {
+        private const val ACTION_START_TIMER = "com.krdonon.timer.action.START_TIMER"
+        private const val ACTION_STOP_TIMER = "com.krdonon.timer.action.STOP_TIMER"
+        private const val ACTION_START_STOPWATCH = "com.krdonon.timer.action.START_STOPWATCH"
+        private const val ACTION_STOP_STOPWATCH = "com.krdonon.timer.action.STOP_STOPWATCH"
+        private const val ACTION_STOP_ALL = "com.krdonon.timer.action.STOP_ALL"
+
+        private const val EXTRA_DURATION_MS = "duration_ms"
+        private const val EXTRA_STOPWATCH_BASE = "stopwatch_base"
+
+        private const val FOREGROUND_ID = 42
+        private const val NID_TIMER = 1001
+        private const val NID_STOPWATCH = 1002
+
+        // ---- 외부에서 쉽게 호출할 수 있는 헬퍼들 ----
+        fun startTimer(context: Context, durationMs: Long) {
+            val i = Intent(context, ClockService::class.java).apply {
+                action = ACTION_START_TIMER
+                putExtra(EXTRA_DURATION_MS, durationMs)
+            }
+            ContextCompat.startForegroundService(context, i)
+        }
+
+        fun stopTimer(context: Context) {
+            val i = Intent(context, ClockService::class.java).apply { action = ACTION_STOP_TIMER }
+            ContextCompat.startForegroundService(context, i)
+        }
+
+        fun startStopwatch(context: Context, baseElapsed: Long = 0L) {
+            val i = Intent(context, ClockService::class.java).apply {
+                action = ACTION_START_STOPWATCH
+                putExtra(EXTRA_STOPWATCH_BASE, baseElapsed)
+            }
+            ContextCompat.startForegroundService(context, i)
+        }
+
+        fun stopStopwatch(context: Context) {
+            val i = Intent(context, ClockService::class.java).apply { action = ACTION_STOP_STOPWATCH }
+            ContextCompat.startForegroundService(context, i)
+        }
+
+        fun stopAll(context: Context) {
+            val i = Intent(context, ClockService::class.java).apply { action = ACTION_STOP_ALL }
+            ContextCompat.startForegroundService(context, i)
+        }
+    }
+}
