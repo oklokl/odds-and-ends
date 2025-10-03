@@ -2,3 +2,6 @@
 
 NumberPadFragment
 숫자 입력 할때 빨간색으로
+
+
+ClockService 초기화 버튼 누르면 버그 튕기는 문제 해결
