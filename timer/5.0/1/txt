@@ -5,3 +5,5 @@ NumberPadFragment
 
 
 ClockService 초기화 버튼 누르면 버그 튕기는 문제 해결
+
+TimerFragment 코드 안정화 튕기는 문제 보호
