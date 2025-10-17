@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.krdonon.timer">
+
+    <!-- 권한 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+    <!-- Foreground Service -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+    <!-- Doze 예외 요청 인텐트 사용(사용자 동의 필요) -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <application
+        android:name=".TimerApp"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Timer">
+
+        <!-- 메인 액티비티: singleTop (알림 눌러도 재사용) -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- 알림에서 특정 탭 열기 같은 내부 액션이 필요할 때 사용 -->
+            <intent-filter>
+                <action android:name="com.krdonon.timer.action.OPEN_TIMER" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- 알람 울릴 때 표시되는 전체 화면 액티비티 (외부 실행 불가: exported=false) -->
+        <activity
+            android:name="com.krdonon.timer.alarm.AlarmActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Timer"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:taskAffinity="" />
+
+        <!-- 정확 알람 브로드캐스트 수신자(AlarmManager) -->
+        <receiver
+            android:name="com.krdonon.timer.alarm.AlarmReceiver"
+            android:enabled="true"
+            android:exported="true" />
+        <!-- 필요 시 BOOT_COMPLETED 재등록도 intent-filter로 추가 가능 -->
+
+        <!-- 알람 소리/진동/풀스크린 담당 서비스 (미디어 재생 타입) -->
+        <service
+            android:name="com.krdonon.timer.alarm.AlarmService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <!-- 진행중(타이머/스톱워치/보조 타이머) 상태 알림 서비스 -->
+        <service
+            android:name=".ClockService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+    </application>
+</manifest>
