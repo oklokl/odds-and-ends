@@ -1,0 +1,362 @@
+package com.krdonon.timer.alarm
+
+import android.app.ActivityManager
+import android.app.KeyguardManager
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
+import android.content.Context
+import android.content.Intent
+import android.media.MediaPlayer
+import android.os.Build
+import android.os.Handler
+import android.os.IBinder
+import android.os.Looper
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
+import androidx.core.app.NotificationCompat
+import com.krdonon.timer.R
+import kotlin.math.abs
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+class AlarmService : Service() {
+
+    companion object {
+        private const val CHANNEL_ID = "ALARM_CHANNEL_V5"
+        private const val HISTORY_CHANNEL_ID = "ALARM_HISTORY_V1"
+        private const val NOTIFICATION_ID = 987654
+
+        const val ACTION_START = "com.krdonon.timer.alarm.ACTION_START"
+        const val ACTION_STOP  = "com.krdonon.timer.alarm.ACTION_STOP"
+        const val EXTRA_LABEL  = "extra_label"
+
+        const val PREFS = "alarm_prefs"
+        const val KEY_RINGING = "ringing"
+        const val KEY_STARTED_FROM_KEYGUARD = "started_from_keyguard"
+
+        const val KEY_ALERT_MODE = "key_alert_mode"
+        const val MODE_VIBRATE = "VIBRATE"
+        const val MODE_SOUND   = "SOUND"
+
+        fun start(context: Context, label: String) {
+            val i = Intent(context, AlarmService::class.java).apply {
+                action = ACTION_START
+                putExtra(EXTRA_LABEL, label)
+            }
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(i)
+                } else {
+                    context.startService(i)
+                }
+            } catch (_: Throwable) {
+                forceStop(context)
+            }
+        }
+
+        fun stop(context: Context) {
+            val i = Intent(context, AlarmService::class.java).apply { action = ACTION_STOP }
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    if (isServiceRunning(context, AlarmService::class.java)) {
+                        context.startService(i)
+                    } else {
+                        forceStop(context)
+                    }
+                } else {
+                    context.startService(i)
+                }
+            } catch (_: Throwable) {
+                forceStop(context)
+            }
+        }
+
+        private fun isServiceRunning(ctx: Context, cls: Class<*>): Boolean {
+            val am = ctx.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            return am.getRunningServices(Int.MAX_VALUE).any { it.service.className == cls.name }
+        }
+
+        fun forceStop(context: Context) {
+            runCatching { context.stopService(Intent(context, AlarmService::class.java)) }
+            runCatching {
+                val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                nm.cancel(NOTIFICATION_ID)
+            }
+            runCatching {
+                context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                    .edit().putBoolean(KEY_RINGING, false).apply()
+            }
+        }
+    }
+
+    private var mediaPlayer: MediaPlayer? = null
+    private var vibrator: Vibrator? = null
+    private val stopHandler = Handler(Looper.getMainLooper())
+
+    // 볼륨/포커스 관리
+    private var savedAlarmVolume: Int? = null
+    private var savedMusicVolume: Int? = null
+    private var audioFocusGranted = false
+    private var focusRequest: android.media.AudioFocusRequest? = null
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            ACTION_START -> {
+                val label = intent.getStringExtra(EXTRA_LABEL) ?: "Timer Alarm"
+                startAlarm(label)
+            }
+            ACTION_STOP -> stopAlarm()
+        }
+        return START_NOT_STICKY
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    // -------------------- 알람 시작/정지 --------------------
+    private fun startAlarm(label: String) {
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        createOrUpdateAlarmChannel(nm)
+        createOrUpdateHistoryChannel(nm)
+
+        // 풀스크린 인텐트
+        val fsIntent = Intent(this, AlarmActivity::class.java).apply {
+            putExtra(EXTRA_LABEL, label)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        }
+        val fsPi = PendingIntent.getActivity(
+            this,
+            0,
+            fsIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE   // ★ 여기!
+        )
+
+        val n: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("⏰ 타이머 종료")
+            .setContentText(label)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setOngoing(true)
+            .setAutoCancel(false)
+            .setFullScreenIntent(fsPi, true)
+            .build()
+        startForeground(NOTIFICATION_ID, n)
+
+        val km = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+        val startedFromKeyguard = km.isKeyguardLocked
+        getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_RINGING, true)
+            .putBoolean(KEY_STARTED_FROM_KEYGUARD, startedFromKeyguard)
+            .apply()
+
+        val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val mode = prefs.getString(KEY_ALERT_MODE, MODE_SOUND) ?: MODE_SOUND
+
+        stopHandler.removeCallbacksAndMessages(null)
+        stopSound()
+        startVibration()
+        if (mode == MODE_SOUND) startSound()
+
+        stopHandler.postDelayed({ stopAlarm() }, 5 * 60 * 1000L)
+
+        postHistoryNotification(label)
+    }
+
+    private fun stopAlarm() {
+        stopHandler.removeCallbacksAndMessages(null)
+        stopSound()
+        stopVibration()
+
+        getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_RINGING, false)
+            .apply()
+
+        runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
+        }
+        runCatching { stopSelf() }
+    }
+
+    override fun onDestroy() {
+        stopSound()
+        stopVibration()
+        super.onDestroy()
+    }
+
+    // -------------------- 소리 --------------------
+    private fun startSound() {
+        audioFocusGranted = requestAudioFocus()
+        elevateVolumeForAlarm()
+
+        val attrs = android.media.AudioAttributes.Builder()
+            .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+
+        val afd = resources.openRawResourceFd(R.raw.alarm_sound)
+        mediaPlayer = MediaPlayer().apply {
+            setAudioAttributes(attrs)
+            isLooping = true
+            setVolume(1.0f, 1.0f)
+            setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+            afd.close()
+            prepare()
+            start()
+        }
+    }
+
+    private fun stopSound() {
+        runCatching { mediaPlayer?.apply { if (isPlaying) stop() } }
+        runCatching { mediaPlayer?.release() }
+        mediaPlayer = null
+
+        if (audioFocusGranted) {
+            abandonAudioFocus()
+            audioFocusGranted = false
+        }
+        restoreVolumeAfterAlarm()
+    }
+
+    // -------------------- 진동 --------------------
+    private fun getVibrator(): Vibrator? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vm = getSystemService(VibratorManager::class.java)
+            vm?.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(VIBRATOR_SERVICE) as Vibrator
+        }
+    }
+    private fun startVibration() {
+        vibrator = getVibrator()
+        vibrator?.let { vib ->
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vib.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 500, 300), 0))
+            } else {
+                @Suppress("DEPRECATION")
+                vib.vibrate(longArrayOf(0, 500, 300), 0)
+            }
+        }
+    }
+    private fun stopVibration() { runCatching { vibrator?.cancel() }; vibrator = null }
+
+    // -------------------- 볼륨/포커스 유틸 --------------------
+    private fun elevateVolumeForAlarm() {
+        val am = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+        val alarmStream = android.media.AudioManager.STREAM_ALARM
+        val musicStream = android.media.AudioManager.STREAM_MUSIC
+
+        if (savedAlarmVolume == null) savedAlarmVolume = am.getStreamVolume(alarmStream)
+        if (savedMusicVolume == null) savedMusicVolume = am.getStreamVolume(musicStream)
+
+        val maxAlarm = am.getStreamMaxVolume(alarmStream)
+        val maxMusic = am.getStreamMaxVolume(musicStream)
+
+        am.setStreamVolume(alarmStream, maxAlarm, 0)
+        am.setStreamVolume(musicStream, maxMusic, 0)
+    }
+
+    private fun restoreVolumeAfterAlarm() {
+        val am = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+        savedAlarmVolume?.let {
+            runCatching { am.setStreamVolume(android.media.AudioManager.STREAM_ALARM, it, 0) }
+        }
+        savedMusicVolume?.let {
+            runCatching { am.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, it, 0) }
+        }
+        savedAlarmVolume = null
+        savedMusicVolume = null
+    }
+
+    private fun requestAudioFocus(): Boolean {
+        val am = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+        val attrs = android.media.AudioAttributes.Builder()
+            .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+
+        return if (Build.VERSION.SDK_INT >= 26) {
+            focusRequest = android.media.AudioFocusRequest.Builder(
+                android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE
+            )
+                .setAudioAttributes(attrs)
+                .setOnAudioFocusChangeListener { }
+                .build()
+            am.requestAudioFocus(focusRequest!!) ==
+                    android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+        } else {
+            @Suppress("DEPRECATION")
+            am.requestAudioFocus(
+                null,
+                android.media.AudioManager.STREAM_ALARM,
+                android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE
+            ) == android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+        }
+    }
+
+    private fun abandonAudioFocus() {
+        val am = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+        if (Build.VERSION.SDK_INT >= 26) {
+            focusRequest?.let { am.abandonAudioFocusRequest(it) }
+            focusRequest = null
+        } else {
+            @Suppress("DEPRECATION")
+            am.abandonAudioFocus(null)
+        }
+    }
+
+    // -------------------- 채널 & 기록 --------------------
+    private fun createOrUpdateAlarmChannel(nm: NotificationManager) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val ch = NotificationChannel(
+                CHANNEL_ID, "Timer Alarm", NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "타이머 알람 채널"
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                setSound(null, null)
+                enableVibration(false)
+            }
+            nm.createNotificationChannel(ch)
+        }
+    }
+
+    private fun createOrUpdateHistoryChannel(nm: NotificationManager) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val ch = NotificationChannel(
+                HISTORY_CHANNEL_ID, "Alarm History", NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "알람 울림 기록"
+                setSound(null, null)
+                enableVibration(false)
+            }
+            nm.createNotificationChannel(ch)
+        }
+    }
+
+    private fun postHistoryNotification(label: String) {
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val time = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+        val text = "$time • \"$label\" 알림이 울렸습니다"
+
+        val n = NotificationCompat.Builder(this, HISTORY_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("알림 기록")
+            .setContentText(text)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setAutoCancel(true)
+            .build()
+
+        nm.notify(abs((System.currentTimeMillis() and 0xFFFFFFF).toInt()), n)
+    }
+}
