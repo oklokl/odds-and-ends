@@ -2,6 +2,7 @@ package com.krdonon.timer
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -23,10 +24,10 @@ import kotlinx.coroutines.*
 import java.util.Locale
 
 /**
- * 메인 타이머/스톱워치 + 보조(여러 개) 타이머를 알림으로 표시하는 ForegroundService.
- * - 메인 타이머: 잠금화면에서도 보이는 RemoteViews + 안전 폴백(표준 알림)
- * - 스톱워치, 보조 타이머: 기존 동작 유지
- * - 프래그먼트와 상태 동기화(브로드캐스트 + SharedPreferences)
+ * 개선된 ClockService: 장시간 타이머 지원
+ * - 상태를 SharedPreferences에 지속적으로 저장
+ * - 서비스 재시작 시 자동 복원
+ * - 주기적인 Keep-Alive 알람 등록
  */
 class ClockService : Service() {
 
@@ -34,18 +35,18 @@ class ClockService : Service() {
 
     // ===== 메인 타이머 =====
     private var timerJob: Job? = null
-    private var timerEndElapsed: Long = 0L          // elapsedRealtime 기준 종료시각
+    private var timerEndElapsed: Long = 0L
     private var isTimerPaused: Boolean = false
     private var pausedRemainingMs: Long = 0L
 
     // ===== 스톱워치 =====
     private var stopwatchJob: Job? = null
-    private var stopwatchBase: Long = 0L            // elapsedRealtime 기준 시작시각
+    private var stopwatchBase: Long = 0L
 
-    // ===== 보조 타이머(여러 개) =====
+    // ===== 보조 타이머 =====
     private val extraJobs = mutableMapOf<String, Job>()
-    private val extraWhen = mutableMapOf<String, Long>()   // id -> 락된 when(표시 고정용)
-    private val extraOrder = mutableMapOf<String, Int>()   // id -> 등록 순번
+    private val extraWhen = mutableMapOf<String, Long>()
+    private val extraOrder = mutableMapOf<String, Int>()
     private var extraSeq = 0
     private var lastSummaryAt = 0L
 
@@ -54,7 +55,7 @@ class ClockService : Service() {
     private var foregroundLeader: Leader? = null
     enum class Leader { TIMER, STOPWATCH }
 
-    // ===== 프래그먼트 동기화 =====
+    // ===== 상태 동기화 =====
     private val ACTION_TIMER_STATE = "com.krdonon.timer.action.TIMER_STATE"
     private val EXTRA_STATE = "state"
     private val EXTRA_REMAIN_MS = "remain_ms"
@@ -63,12 +64,30 @@ class ClockService : Service() {
     private val STATE_STOPPED = "STOPPED"
     private val STATE_FINISHED = "FINISHED"
 
+    // ===== 지속 저장용 SharedPreferences =====
+    private val PERSIST_PREFS = "clock_persist_prefs"
+    private val KEY_TIMER_END_ELAPSED = "timer_end_elapsed"
+    private val KEY_TIMER_PAUSED = "timer_paused"
+    private val KEY_TIMER_PAUSED_REMAIN = "timer_paused_remain"
+    private val KEY_STOPWATCH_BASE = "stopwatch_base"
+    private val KEY_STOPWATCH_RUNNING = "stopwatch_running"
+
+    // ===== Keep-Alive 알람 (30분마다 서비스 체크) =====
+    private val KEEP_ALIVE_INTERVAL_MS = 30 * 60 * 1000L // 30분
+    private val KEEP_ALIVE_REQUEST_CODE = 99999
+
     private val SYNC_PREFS = "clock_sync_prefs"
     private val KEY_LAST_STATE = "key_state"
     private val KEY_LAST_REMAIN = "key_remain_ms"
     private var lastPublishMs = 0L
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        // 서비스 생성 시 저장된 상태 복원
+        restorePersistedState()
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
@@ -78,8 +97,14 @@ class ClockService : Service() {
                 startTimer(durationMs)
                 publishTimerState(STATE_RUNNING, durationMs, force = true)
             }
-            ACTION_STOP_TIMER   -> { stopTimer(); publishTimerState(STATE_STOPPED, 0L, force = true) }
-            ACTION_PAUSE_TIMER  -> { pauseTimer(); publishTimerState(STATE_PAUSED, pausedRemainingMs, force = true) }
+            ACTION_STOP_TIMER   -> {
+                stopTimer()
+                publishTimerState(STATE_STOPPED, 0L, force = true)
+            }
+            ACTION_PAUSE_TIMER  -> {
+                pauseTimer()
+                publishTimerState(STATE_PAUSED, pausedRemainingMs, force = true)
+            }
             ACTION_RESUME_TIMER -> {
                 if (isTimerPaused && pausedRemainingMs > 0L) {
                     publishTimerState(STATE_RUNNING, pausedRemainingMs, force = true)
@@ -108,14 +133,20 @@ class ClockService : Service() {
                 stopTimer(); stopStopwatch(); stopAllExtras()
                 publishTimerState(STATE_STOPPED, 0L, force = true)
             }
+
+            ACTION_KEEP_ALIVE -> {
+                // Keep-Alive 알람 트리거: 서비스가 죽었으면 복원
+                restorePersistedState()
+            }
         }
-        return START_STICKY
+        return START_STICKY // 시스템이 서비스 재시작 시 자동 복원
     }
 
     override fun onDestroy() {
         timerJob?.cancel()
         stopwatchJob?.cancel()
         stopAllExtras()
+        cancelKeepAliveAlarm()
         scope.cancel()
         super.onDestroy()
     }
@@ -134,10 +165,76 @@ class ClockService : Service() {
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
 
-            // 타이머는 잠금화면 가시성을 위해 DEFAULT
             nm.createNotificationChannel(ch(TIMER_CHANNEL, "타이머 진행", NotificationManager.IMPORTANCE_DEFAULT))
             nm.createNotificationChannel(ch(STOPWATCH_CHANNEL, "스톱워치 진행", NotificationManager.IMPORTANCE_LOW))
             nm.createNotificationChannel(ch(EXTRA_CHANNEL, "보조 타이머 진행", NotificationManager.IMPORTANCE_LOW))
+        }
+    }
+
+    // ===================== 상태 지속 저장/복원 =====================
+    private fun persistTimerState() {
+        getSharedPreferences(PERSIST_PREFS, Context.MODE_PRIVATE).edit()
+            .putLong(KEY_TIMER_END_ELAPSED, timerEndElapsed)
+            .putBoolean(KEY_TIMER_PAUSED, isTimerPaused)
+            .putLong(KEY_TIMER_PAUSED_REMAIN, pausedRemainingMs)
+            .apply()
+    }
+
+    private fun clearTimerState() {
+        getSharedPreferences(PERSIST_PREFS, Context.MODE_PRIVATE).edit()
+            .remove(KEY_TIMER_END_ELAPSED)
+            .remove(KEY_TIMER_PAUSED)
+            .remove(KEY_TIMER_PAUSED_REMAIN)
+            .apply()
+    }
+
+    private fun persistStopwatchState() {
+        getSharedPreferences(PERSIST_PREFS, Context.MODE_PRIVATE).edit()
+            .putLong(KEY_STOPWATCH_BASE, stopwatchBase)
+            .putBoolean(KEY_STOPWATCH_RUNNING, stopwatchJob != null)
+            .apply()
+    }
+
+    private fun clearStopwatchState() {
+        getSharedPreferences(PERSIST_PREFS, Context.MODE_PRIVATE).edit()
+            .remove(KEY_STOPWATCH_BASE)
+            .remove(KEY_STOPWATCH_RUNNING)
+            .apply()
+    }
+
+    private fun restorePersistedState() {
+        val prefs = getSharedPreferences(PERSIST_PREFS, Context.MODE_PRIVATE)
+
+        // 타이머 복원
+        val savedEndElapsed = prefs.getLong(KEY_TIMER_END_ELAPSED, 0L)
+        val wasPaused = prefs.getBoolean(KEY_TIMER_PAUSED, false)
+        val savedPausedRemain = prefs.getLong(KEY_TIMER_PAUSED_REMAIN, 0L)
+
+        if (wasPaused && savedPausedRemain > 0L) {
+            // 일시정지 상태 복원
+            isTimerPaused = true
+            pausedRemainingMs = savedPausedRemain
+            ensureForeground(Leader.TIMER)
+            notifyTimer(pausedRemainingMs)
+        } else if (savedEndElapsed > 0L) {
+            // 실행 중 상태 복원
+            val remain = savedEndElapsed - SystemClock.elapsedRealtime()
+            if (remain > 0L) {
+                timerEndElapsed = savedEndElapsed
+                startTimerJob() // Job 재시작
+                scheduleKeepAliveAlarm()
+            } else {
+                // 이미 종료됨
+                clearTimerState()
+            }
+        }
+
+        // 스톱워치 복원
+        val swBase = prefs.getLong(KEY_STOPWATCH_BASE, 0L)
+        val swRunning = prefs.getBoolean(KEY_STOPWATCH_RUNNING, false)
+        if (swRunning && swBase > 0L) {
+            stopwatchBase = swBase
+            startStopwatchJob()
         }
     }
 
@@ -145,8 +242,13 @@ class ClockService : Service() {
     private fun startTimer(durationMs: Long) {
         ensureChannels()
         timerEndElapsed = SystemClock.elapsedRealtime() + durationMs
+        persistTimerState()
         ensureForeground(Leader.TIMER)
+        startTimerJob()
+        scheduleKeepAliveAlarm()
+    }
 
+    private fun startTimerJob() {
         timerJob?.cancel()
         timerJob = scope.launch {
             var last = 0L
@@ -157,14 +259,16 @@ class ClockService : Service() {
                     publishTimerState(STATE_FINISHED, 0L, force = true)
                     delay(300)
                     cancelTimerNotification()
+                    clearTimerState()
+                    cancelKeepAliveAlarm()
                     break
                 } else {
                     val t = System.currentTimeMillis()
                     if (t - last >= 1000) {
                         notifyTimer(remain)
+                        persistTimerState() // 주기적 저장
                         last = t
                     }
-                    // 초당 1회 상태 송출(프래그먼트 백업 동기화)
                     publishTimerTickIfNeeded(remain)
                 }
                 delay(100)
@@ -180,7 +284,9 @@ class ClockService : Service() {
         isTimerPaused = true
         timerJob?.cancel()
         timerJob = null
-        foregroundLeader = Leader.TIMER // FG 유지
+        persistTimerState()
+        cancelKeepAliveAlarm()
+        foregroundLeader = Leader.TIMER
         notifyTimer(pausedRemainingMs)
         onChannelPossiblyIdle()
     }
@@ -196,6 +302,8 @@ class ClockService : Service() {
         timerJob = null
         isTimerPaused = false
         pausedRemainingMs = 0L
+        clearTimerState()
+        cancelKeepAliveAlarm()
         cancelTimerNotification()
         onChannelPossiblyIdle()
     }
@@ -204,8 +312,12 @@ class ClockService : Service() {
     private fun startStopwatch(baseElapsed: Long = 0L) {
         ensureChannels()
         stopwatchBase = SystemClock.elapsedRealtime() - baseElapsed
+        persistStopwatchState()
         ensureForeground(Leader.STOPWATCH)
+        startStopwatchJob()
+    }
 
+    private fun startStopwatchJob() {
         stopwatchJob?.cancel()
         stopwatchJob = scope.launch {
             var last = 0L
@@ -214,6 +326,7 @@ class ClockService : Service() {
                 val t = System.currentTimeMillis()
                 if (t - last >= 1000) {
                     notifyStopwatch(elapsed)
+                    persistStopwatchState()
                     last = t
                 }
                 delay(100)
@@ -224,8 +337,53 @@ class ClockService : Service() {
     private fun stopStopwatch() {
         stopwatchJob?.cancel()
         stopwatchJob = null
+        clearStopwatchState()
         cancelStopwatchNotification()
         onChannelPossiblyIdle()
+    }
+
+    // ===================== Keep-Alive 알람 =====================
+    private fun scheduleKeepAliveAlarm() {
+        val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(this, ClockService::class.java).apply {
+            action = ACTION_KEEP_ALIVE
+        }
+        val pi = PendingIntent.getService(
+            this,
+            KEEP_ALIVE_REQUEST_CODE,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val triggerAt = System.currentTimeMillis() + KEEP_ALIVE_INTERVAL_MS
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (am.canScheduleExactAlarms()) {
+                    am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi)
+                } else {
+                    am.set(AlarmManager.RTC_WAKEUP, triggerAt, pi)
+                }
+            } else {
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi)
+            }
+        } catch (_: Exception) {
+            am.set(AlarmManager.RTC_WAKEUP, triggerAt, pi)
+        }
+    }
+
+    private fun cancelKeepAliveAlarm() {
+        val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(this, ClockService::class.java).apply {
+            action = ACTION_KEEP_ALIVE
+        }
+        val pi = PendingIntent.getService(
+            this,
+            KEEP_ALIVE_REQUEST_CODE,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        runCatching { am.cancel(pi) }
     }
 
     // ===================== Extras =====================
@@ -313,7 +471,7 @@ class ClockService : Service() {
         if (!isInForeground) {
             foregroundLeader = preferred
             val initial: Notification = when (preferred) {
-                Leader.TIMER -> buildTimerNotificationSafe(0L)   // 안전 폴백으로 시작
+                Leader.TIMER -> buildTimerNotificationSafe(0L)
                 Leader.STOPWATCH -> buildStopwatchNotification(0L)
             }
             runCatching { startForeground(FOREGROUND_ID, initial) }
@@ -354,7 +512,7 @@ class ClockService : Service() {
         }
     }
 
-    // ===================== Notifications =====================
+    // ===================== Notifications (기존 코드 유지) =====================
     private fun notifyTimer(remainingMs: Long) {
         val id = if (foregroundLeader == Leader.TIMER) FOREGROUND_ID else NID_TIMER
         notifySafe(id, buildTimerNotificationSafe(remainingMs))
@@ -375,7 +533,6 @@ class ClockService : Service() {
         cancelSafe(id)
     }
 
-    // ======= 안전 래퍼: RemoteViews 실패 시 표준 알림으로 폴백 =======
     private fun buildTimerNotificationSafe(remainingMs: Long): Notification {
         return try {
             buildTimerNotificationRemoteViews(remainingMs)
@@ -398,7 +555,6 @@ class ClockService : Service() {
                 .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
 
             if (running) {
-                // 표준 알림의 크로노미터는 wall clock 기준
                 b.setShowWhen(true)
                     .setUsesChronometer(true)
                     .setChronometerCountDown(true)
@@ -415,22 +571,16 @@ class ClockService : Service() {
         }
     }
 
-    // ======= (핵심) RemoteViews 버전 =======
     private fun buildTimerNotificationRemoteViews(remainingMs: Long): Notification {
         val running = (timerJob != null) && !isTimerPaused
-
-        // Chronometer(알림 RemoteViews)는 반드시 elapsedRealtime 기준
         val baseElapsed = SystemClock.elapsedRealtime() + remainingMs.coerceAtLeast(0L)
 
-        // --- RemoteViews 인스턴스 ---
         val compact = RemoteViews(packageName, R.layout.notification_timer_compact)
         val expanded = RemoteViews(packageName, R.layout.notification_timer_expanded)
 
-        // 타이틀
         compact.setTextViewText(R.id.title, getString(R.string.label_timer))
         expanded.setTextViewText(R.id.title_big, getString(R.string.label_timer))
 
-        // 크로노미터(카운트다운)
         if (Build.VERSION.SDK_INT >= 24) {
             compact.setChronometerCountDown(R.id.chronometer, true)
             expanded.setChronometerCountDown(R.id.chronometer_big, true)
@@ -438,12 +588,10 @@ class ClockService : Service() {
         compact.setChronometer(R.id.chronometer, baseElapsed, null, running)
         expanded.setChronometer(R.id.chronometer_big, baseElapsed, null, running)
 
-        // 버튼 인텐트
         val piPause = serviceActionPendingIntent(ACTION_PAUSE_TIMER)
         val piResume = serviceActionPendingIntent(ACTION_RESUME_TIMER)
         val piStop  = serviceActionPendingIntent(ACTION_STOP_TIMER)
 
-        // compact: ImageView 버튼(가장 호환성 좋음)
         if (running) {
             compact.setImageViewResource(R.id.btn_toggle, R.drawable.ic_pause)
             compact.setOnClickPendingIntent(R.id.btn_toggle, piPause)
@@ -468,11 +616,9 @@ class ClockService : Service() {
         expanded.setTextViewText(R.id.btn_stop_big, getString(R.string.btn_stop))
         expanded.setOnClickPendingIntent(R.id.btn_stop_big, piStop)
 
-        // 본문(시스템 영역 텍스트)
         val content = if (running) "남은 시간: ${formatHMSms4(remainingMs)}"
         else "일시정지 • ${formatHMSms4(remainingMs)}"
 
-        // 퍼블릭 버전(잠금화면 민감정보 숨김 모드 대비)
         val publicVersion = NotificationCompat.Builder(this, TIMER_CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(getString(R.string.label_timer))
@@ -499,7 +645,6 @@ class ClockService : Service() {
             .setCustomBigContentView(expanded)
             .setPublicVersion(publicVersion)
 
-        // 표준 알림의 크로노미터는 wall clock 기준 -> setWhen은 currentTimeMillis + 남은시간
         if (running) {
             builder.setShowWhen(true)
                 .setUsesChronometer(true)
@@ -512,7 +657,6 @@ class ClockService : Service() {
         return builder.build()
     }
 
-    // 스톱워치 알림(표준)
     private fun buildStopwatchNotification(elapsedMs: Long): Notification {
         val content = "경과 시간: ${formatHMSms4(elapsedMs)}"
         return NotificationCompat.Builder(this, STOPWATCH_CHANNEL)
@@ -530,7 +674,6 @@ class ClockService : Service() {
             .build()
     }
 
-    // 보조 타이머 알림(정렬 고정 + 깜빡임 방지)
     private fun buildExtraNotification(id: String, label: String, remainingMs: Long): Notification {
         val content = "${formatHMSms4(remainingMs)} 남음"
         val fixedWhen = extraWhen[id] ?: System.currentTimeMillis()
@@ -555,13 +698,11 @@ class ClockService : Service() {
 
     // ========== 상태 송출 유틸 ==========
     private fun publishTimerState(state: String, remainMs: Long, force: Boolean = false) {
-        // 1) Prefs 저장 (프래그먼트가 언제든 읽어와 동기화)
         getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE).edit()
             .putString(KEY_LAST_STATE, state)
             .putLong(KEY_LAST_REMAIN, remainMs.coerceAtLeast(0L))
             .apply()
 
-        // 2) 브로드캐스트 (프래그먼트가 살아있다면 즉시 반영)
         val intent = Intent(ACTION_TIMER_STATE).apply {
             putExtra(EXTRA_STATE, state)
             putExtra(EXTRA_REMAIN_MS, remainMs.coerceAtLeast(0L))
@@ -633,6 +774,7 @@ class ClockService : Service() {
         private const val ACTION_START_EXTRA = "com.krdonon.timer.action.START_EXTRA"
         private const val ACTION_STOP_EXTRA = "com.krdonon.timer.action.STOP_EXTRA"
         private const val ACTION_STOP_ALL = "com.krdonon.timer.action.STOP_ALL"
+        private const val ACTION_KEEP_ALIVE = "com.krdonon.timer.action.KEEP_ALIVE"
 
         // extras
         private const val EXTRA_DURATION_MS = "duration_ms"
