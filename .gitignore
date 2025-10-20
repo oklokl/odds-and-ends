@@ -1,3 +1,4 @@
+# Android Studio / Gradle 기본 제외 항목
 .idea/
 .gradle/
 local.properties
