@@ -23,6 +23,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.LifecycleEventObserver
 import com.krdonon.touch.ui.theme.TouchTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -60,29 +63,27 @@ data class TouchTarget(
 fun TouchGameScreen() {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     var currentTime by remember { mutableStateOf("오전 00:00:00:000") }
     var touchCount by remember { mutableIntStateOf(0) }
     var failCount by remember { mutableIntStateOf(0) }
     var isGamePaused by remember { mutableStateOf(false) }
     var touchTargets by remember { mutableStateOf<List<TouchTarget>>(emptyList()) }
-    var isBgmEnabled by remember { mutableStateOf(true) } // 배경음악 on/off 상태
+    var isBgmEnabled by remember { mutableStateOf(true) }
 
-    // 배경음악 MediaPlayer 초기화
     val bgmPlayer = remember {
         try {
             MediaPlayer.create(context, R.raw.sstouch).apply {
-                setVolume(0.5f, 0.5f) // 50% 음량 고정 (시스템 볼륨과 별개)
-                isLooping = true // 반복 재생
-                // 초기에는 자동 시작 (스위치가 on 상태이므로)
+                setVolume(0.5f, 0.5f)
+                isLooping = true
                 start()
             }
         } catch (_: Exception) {
-            null // 파일이 없으면 null
+            null
         }
     }
 
-    // 터치 효과음 SoundPool 초기화
     val soundPool = remember {
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_GAME)
@@ -103,12 +104,34 @@ fun TouchGameScreen() {
         }
     }
 
-    // 배경음악 on/off 제어
     LaunchedEffect(isBgmEnabled) {
         if (isBgmEnabled) {
-            bgmPlayer?.start() // 배경음악 재생
+            bgmPlayer?.start()
         } else {
-            bgmPlayer?.pause() // 배경음악 일시정지
+            bgmPlayer?.pause()
+        }
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_PAUSE -> {
+                    bgmPlayer?.pause()
+                    isGamePaused = true
+                }
+                Lifecycle.Event.ON_RESUME -> {
+                    if (isBgmEnabled) {
+                        bgmPlayer?.start()
+                    }
+                }
+                else -> {}
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 
@@ -118,7 +141,6 @@ fun TouchGameScreen() {
             val dateFormat = SimpleDateFormat("a hh:mm:ss", Locale.KOREAN)
             val timeBase = dateFormat.format(calendar.time)
             val milliseconds = calendar.get(Calendar.MILLISECOND)
-            // 밀리초를 4자리로 표시 (0000~9999)
             currentTime = "$timeBase:${String.format(Locale.US, "%04d", milliseconds * 10)}"
             delay(100)
         }
@@ -182,7 +204,6 @@ fun TouchGameScreen() {
                 )
             }
 
-            // 배경음악 on/off 스위치
             Switch(
                 checked = isBgmEnabled,
                 onCheckedChange = { isBgmEnabled = it },
@@ -312,10 +333,8 @@ fun TouchGameScreen() {
 
     DisposableEffect(Unit) {
         onDispose {
-            // 배경음악 정리
             bgmPlayer?.stop()
             bgmPlayer?.release()
-            // 효과음 정리
             soundPool.release()
         }
     }

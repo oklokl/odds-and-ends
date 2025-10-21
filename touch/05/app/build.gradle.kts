@@ -6,16 +6,14 @@ plugins {
 
 android {
     namespace = "com.krdonon.touch"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.krdonon.touch"
         minSdk = 26
         targetSdk = 36
-        versionCode = 5
-        versionName = "5.0"
+        versionCode = 6
+        versionName = "6.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -50,6 +48,10 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+
+    // Lifecycle Compose - 경고가 나지만 정상 작동합니다
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
