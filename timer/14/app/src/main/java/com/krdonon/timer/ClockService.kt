@@ -21,13 +21,15 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.*
+import org.json.JSONArray
+import org.json.JSONObject
 import java.util.Locale
 
 /**
- * 개선된 ClockService: 장시간 타이머 지원
- * - 상태를 SharedPreferences에 지속적으로 저장
+ * 개선된 ClockService: 메인 타이머 + 보조 타이머 + 스톱워치 모두 장시간 실행 지원
+ * - 모든 타이머 상태를 SharedPreferences에 지속 저장
  * - 서비스 재시작 시 자동 복원
- * - 주기적인 Keep-Alive 알람 등록
+ * - Keep-Alive 알람으로 장시간 실행 보장
  */
 class ClockService : Service() {
 
@@ -43,8 +45,15 @@ class ClockService : Service() {
     private var stopwatchJob: Job? = null
     private var stopwatchBase: Long = 0L
 
-    // ===== 보조 타이머 =====
-    private val extraJobs = mutableMapOf<String, Job>()
+    // ===== 보조 타이머 (복원 지원) =====
+    private data class ExtraTimerState(
+        val id: String,
+        val label: String,
+        var endElapsed: Long,
+        var job: Job? = null
+    )
+
+    private val extraTimers = mutableMapOf<String, ExtraTimerState>()
     private val extraWhen = mutableMapOf<String, Long>()
     private val extraOrder = mutableMapOf<String, Int>()
     private var extraSeq = 0
@@ -71,9 +80,10 @@ class ClockService : Service() {
     private val KEY_TIMER_PAUSED_REMAIN = "timer_paused_remain"
     private val KEY_STOPWATCH_BASE = "stopwatch_base"
     private val KEY_STOPWATCH_RUNNING = "stopwatch_running"
+    private val KEY_EXTRA_TIMERS_JSON = "extra_timers_json"
 
-    // ===== Keep-Alive 알람 (30분마다 서비스 체크) =====
-    private val KEEP_ALIVE_INTERVAL_MS = 30 * 60 * 1000L // 30분
+    // ===== Keep-Alive 알람 =====
+    private val KEEP_ALIVE_INTERVAL_MS = 30 * 60 * 1000L
     private val KEEP_ALIVE_REQUEST_CODE = 99999
 
     private val SYNC_PREFS = "clock_sync_prefs"
@@ -85,7 +95,6 @@ class ClockService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        // 서비스 생성 시 저장된 상태 복원
         restorePersistedState()
     }
 
@@ -135,11 +144,11 @@ class ClockService : Service() {
             }
 
             ACTION_KEEP_ALIVE -> {
-                // Keep-Alive 알람 트리거: 서비스가 죽었으면 복원
                 restorePersistedState()
+                scheduleKeepAliveAlarm()
             }
         }
-        return START_STICKY // 시스템이 서비스 재시작 시 자동 복원
+        return START_STICKY
     }
 
     override fun onDestroy() {
@@ -202,39 +211,76 @@ class ClockService : Service() {
             .apply()
     }
 
+    private fun persistExtraTimers() {
+        val jsonArray = JSONArray()
+        extraTimers.values.forEach { timer ->
+            val obj = JSONObject().apply {
+                put("id", timer.id)
+                put("label", timer.label)
+                put("endElapsed", timer.endElapsed)
+            }
+            jsonArray.put(obj)
+        }
+
+        getSharedPreferences(PERSIST_PREFS, Context.MODE_PRIVATE).edit()
+            .putString(KEY_EXTRA_TIMERS_JSON, jsonArray.toString())
+            .apply()
+    }
+
+    private fun clearExtraTimers() {
+        getSharedPreferences(PERSIST_PREFS, Context.MODE_PRIVATE).edit()
+            .remove(KEY_EXTRA_TIMERS_JSON)
+            .apply()
+    }
+
     private fun restorePersistedState() {
         val prefs = getSharedPreferences(PERSIST_PREFS, Context.MODE_PRIVATE)
 
-        // 타이머 복원
         val savedEndElapsed = prefs.getLong(KEY_TIMER_END_ELAPSED, 0L)
         val wasPaused = prefs.getBoolean(KEY_TIMER_PAUSED, false)
         val savedPausedRemain = prefs.getLong(KEY_TIMER_PAUSED_REMAIN, 0L)
 
         if (wasPaused && savedPausedRemain > 0L) {
-            // 일시정지 상태 복원
             isTimerPaused = true
             pausedRemainingMs = savedPausedRemain
             ensureForeground(Leader.TIMER)
             notifyTimer(pausedRemainingMs)
         } else if (savedEndElapsed > 0L) {
-            // 실행 중 상태 복원
             val remain = savedEndElapsed - SystemClock.elapsedRealtime()
             if (remain > 0L) {
                 timerEndElapsed = savedEndElapsed
-                startTimerJob() // Job 재시작
+                startTimerJob()
                 scheduleKeepAliveAlarm()
             } else {
-                // 이미 종료됨
                 clearTimerState()
             }
         }
 
-        // 스톱워치 복원
         val swBase = prefs.getLong(KEY_STOPWATCH_BASE, 0L)
         val swRunning = prefs.getBoolean(KEY_STOPWATCH_RUNNING, false)
         if (swRunning && swBase > 0L) {
             stopwatchBase = swBase
             startStopwatchJob()
+        }
+
+        val extrasJson = prefs.getString(KEY_EXTRA_TIMERS_JSON, null)
+        if (!extrasJson.isNullOrBlank()) {
+            try {
+                val jsonArray = JSONArray(extrasJson)
+                for (i in 0 until jsonArray.length()) {
+                    val obj = jsonArray.getJSONObject(i)
+                    val id = obj.getString("id")
+                    val label = obj.getString("label")
+                    val endElapsed = obj.getLong("endElapsed")
+
+                    val remain = endElapsed - SystemClock.elapsedRealtime()
+                    if (remain > 0L) {
+                        startExtraFromEndElapsed(id, label, endElapsed)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -266,7 +312,7 @@ class ClockService : Service() {
                     val t = System.currentTimeMillis()
                     if (t - last >= 1000) {
                         notifyTimer(remain)
-                        persistTimerState() // 주기적 저장
+                        persistTimerState()
                         last = t
                     }
                     publishTimerTickIfNeeded(remain)
@@ -386,23 +432,33 @@ class ClockService : Service() {
         runCatching { am.cancel(pi) }
     }
 
-    // ===================== Extras =====================
+    // ===================== Extras (보조 타이머) =====================
     private fun startExtra(id: String, label: String, durationMs: Long) {
-        ensureChannels()
-        extraJobs[id]?.cancel()
-
         val endElapsed = SystemClock.elapsedRealtime() + durationMs
+        startExtraFromEndElapsed(id, label, endElapsed)
+    }
+
+    private fun startExtraFromEndElapsed(id: String, label: String, endElapsed: Long) {
+        ensureChannels()
+
+        extraTimers[id]?.job?.cancel()
+
+        val state = ExtraTimerState(id, label, endElapsed)
+        extraTimers[id] = state
+
         val notifyId = extraNotifyId(id)
 
         if (extraWhen[id] == null) extraWhen[id] = System.currentTimeMillis()
         if (extraOrder[id] == null) extraOrder[id] = extraSeq++
 
         postOrUpdateExtraSummary(force = true)
+        persistExtraTimers()
+        scheduleKeepAliveAlarm()
 
-        extraJobs[id] = scope.launch {
+        state.job = scope.launch {
             var last = 0L
             while (isActive) {
-                val remain = endElapsed - SystemClock.elapsedRealtime()
+                val remain = state.endElapsed - SystemClock.elapsedRealtime()
                 if (remain <= 0L) {
                     notifySafe(notifyId, buildExtraNotification(id, label, 0L))
                     delay(300)
@@ -412,36 +468,50 @@ class ClockService : Service() {
                     val t = System.currentTimeMillis()
                     if (t - last >= 1000) {
                         notifySafe(notifyId, buildExtraNotification(id, label, remain))
+                        persistExtraTimers()
                         last = t
                     }
                 }
                 postOrUpdateExtraSummary(force = false)
                 delay(100)
             }
-            extraJobs.remove(id)
+            extraTimers.remove(id)
             extraWhen.remove(id)
             extraOrder.remove(id)
-            if (extraJobs.isEmpty()) cancelSafe(EXTRA_SUMMARY_ID) else postOrUpdateExtraSummary(force = true)
+            persistExtraTimers()
+            if (extraTimers.isEmpty()) {
+                cancelSafe(EXTRA_SUMMARY_ID)
+                clearExtraTimers()
+            } else {
+                postOrUpdateExtraSummary(force = true)
+            }
             onChannelPossiblyIdle()
         }
     }
 
     private fun stopExtra(id: String) {
-        extraJobs.remove(id)?.cancel()
+        extraTimers.remove(id)?.job?.cancel()
         cancelSafe(extraNotifyId(id))
         extraWhen.remove(id)
         extraOrder.remove(id)
-        if (extraJobs.isEmpty()) cancelSafe(EXTRA_SUMMARY_ID) else postOrUpdateExtraSummary(force = true)
+        persistExtraTimers()
+        if (extraTimers.isEmpty()) {
+            cancelSafe(EXTRA_SUMMARY_ID)
+            clearExtraTimers()
+        } else {
+            postOrUpdateExtraSummary(force = true)
+        }
         onChannelPossiblyIdle()
     }
 
     private fun stopAllExtras() {
-        extraJobs.values.forEach { it.cancel() }
-        extraJobs.clear()
+        extraTimers.values.forEach { it.job?.cancel() }
+        extraTimers.clear()
         extraWhen.clear()
         extraOrder.clear()
         cancelSafe(EXTRA_SUMMARY_ID)
         for (i in 0 until 100) cancelSafe(EXTRA_BASE_NID + i)
+        clearExtraTimers()
     }
 
     private fun extraNotifyId(id: String): Int =
@@ -455,7 +525,7 @@ class ClockService : Service() {
         val n = NotificationCompat.Builder(this, EXTRA_CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("보조 타이머")
-            .setContentText("진행 중: ${extraJobs.size}개")
+            .setContentText("진행 중: ${extraTimers.size}개")
             .setGroup(EXTRA_GROUP)
             .setGroupSummary(true)
             .setOnlyAlertOnce(true)
@@ -482,7 +552,7 @@ class ClockService : Service() {
     private fun onChannelPossiblyIdle() {
         val timerRunning = timerJob != null
         val stopwatchRunning = stopwatchJob != null
-        val extraRunning = extraJobs.isNotEmpty()
+        val extraRunning = extraTimers.isNotEmpty()
 
         when {
             timerRunning || isTimerPaused -> {
@@ -512,7 +582,7 @@ class ClockService : Service() {
         }
     }
 
-    // ===================== Notifications (기존 코드 유지) =====================
+    // ===================== Notifications =====================
     private fun notifyTimer(remainingMs: Long) {
         val id = if (foregroundLeader == Leader.TIMER) FOREGROUND_ID else NID_TIMER
         notifySafe(id, buildTimerNotificationSafe(remainingMs))
@@ -538,8 +608,8 @@ class ClockService : Service() {
             buildTimerNotificationRemoteViews(remainingMs)
         } catch (_: Throwable) {
             val running = (timerJob != null) && !isTimerPaused
-            val content = if (running) "남은 시간: ${formatHMSms4(remainingMs)}"
-            else "일시정지 • ${formatHMSms4(remainingMs)}"
+            val content = if (running) "남은 시간 ${formatHMS(remainingMs)}"
+            else "일시정지 • ${formatHMS(remainingMs)}"
 
             val b = NotificationCompat.Builder(this, TIMER_CHANNEL)
                 .setSmallIcon(R.drawable.ic_notification)
@@ -616,8 +686,8 @@ class ClockService : Service() {
         expanded.setTextViewText(R.id.btn_stop_big, getString(R.string.btn_stop))
         expanded.setOnClickPendingIntent(R.id.btn_stop_big, piStop)
 
-        val content = if (running) "남은 시간: ${formatHMSms4(remainingMs)}"
-        else "일시정지 • ${formatHMSms4(remainingMs)}"
+        val content = if (running) "남은 시간 ${formatHMS(remainingMs)}"
+        else "일시정지 • ${formatHMS(remainingMs)}"
 
         val publicVersion = NotificationCompat.Builder(this, TIMER_CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
@@ -658,7 +728,7 @@ class ClockService : Service() {
     }
 
     private fun buildStopwatchNotification(elapsedMs: Long): Notification {
-        val content = "경과 시간: ${formatHMSms4(elapsedMs)}"
+        val content = "경과 시간 ${formatHMS(elapsedMs)}"
         return NotificationCompat.Builder(this, STOPWATCH_CHANNEL)
             .setContentTitle("스톱워치")
             .setContentText(content)
@@ -675,7 +745,7 @@ class ClockService : Service() {
     }
 
     private fun buildExtraNotification(id: String, label: String, remainingMs: Long): Notification {
-        val content = "${formatHMSms4(remainingMs)} 남음"
+        val content = "${formatHMS(remainingMs)} 남음"
         val fixedWhen = extraWhen[id] ?: System.currentTimeMillis()
         val order = extraOrder[id] ?: 0
         val sortKey = String.format(Locale.US, "%06d", Int.MAX_VALUE - order)
@@ -736,14 +806,14 @@ class ClockService : Service() {
         return PendingIntent.getService(this, action.hashCode(), i, flags)
     }
 
-    private fun formatHMSms4(msInput: Long): String {
+    // 🔹 알림바용 짧은 형식 (00:00:00)
+    private fun formatHMS(msInput: Long): String {
         val ms = msInput.coerceAtLeast(0L)
         val totalSec = ms / 1000
         val h = totalSec / 3600
         val m = (totalSec % 3600) / 60
         val s = totalSec % 60
-        val tenTh = ((ms % 1000) * 10).toInt()
-        return String.format(Locale.getDefault(), "%02d:%02d:%02d:%04d", h, m, s, tenTh)
+        return String.format(Locale.getDefault(), "%02d:%02d:%02d", h, m, s)
     }
 
     private fun canPostNotifications(): Boolean {
@@ -764,7 +834,6 @@ class ClockService : Service() {
     }
 
     companion object {
-        // actions
         private const val ACTION_START_TIMER = "com.krdonon.timer.action.START_TIMER"
         private const val ACTION_STOP_TIMER = "com.krdonon.timer.action.STOP_TIMER"
         private const val ACTION_PAUSE_TIMER = "com.krdonon.timer.action.PAUSE_TIMER"
@@ -776,28 +845,23 @@ class ClockService : Service() {
         private const val ACTION_STOP_ALL = "com.krdonon.timer.action.STOP_ALL"
         private const val ACTION_KEEP_ALIVE = "com.krdonon.timer.action.KEEP_ALIVE"
 
-        // extras
         private const val EXTRA_DURATION_MS = "duration_ms"
         private const val EXTRA_STOPWATCH_BASE = "stopwatch_base"
         private const val EXTRA_ID = "id"
         private const val EXTRA_LABEL = "label"
 
-        // ids
         private const val FOREGROUND_ID = 42
         private const val NID_TIMER = 1001
         private const val NID_STOPWATCH = 1002
         private const val EXTRA_BASE_NID = 2000
         private const val EXTRA_SUMMARY_ID = 2999
 
-        // channels
         private const val TIMER_CHANNEL = "timer_channel_v2"
         private const val STOPWATCH_CHANNEL = "stopwatch_channel"
         private const val EXTRA_CHANNEL = "extra_timer_channel"
 
-        // 보조 타이머 그룹
         private const val EXTRA_GROUP = "extra_timer_group"
 
-        // ===== helper APIs =====
         fun startTimer(context: Context, durationMs: Long) {
             val i = Intent(context, ClockService::class.java).apply {
                 action = ACTION_START_TIMER

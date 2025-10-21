@@ -13,6 +13,7 @@ import android.os.Bundle
 import android.os.CountDownTimer
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
@@ -55,6 +56,9 @@ class TimerFragment : Fragment() {
     private var running = false
 
     private lateinit var viewModel: TimerViewModel
+
+    // 🔹 보조 타이머의 종료 시각을 저장 (elapsedRealtime 기준)
+    private val extraTimerEndTimes = mutableMapOf<String, Long>()
 
     // ====== ClockService ↔ Fragment 동기화용 브로드캐스트(서비스와 동일 키) ======
     private val ACTION_TIMER_STATE = "com.krdonon.timer.action.TIMER_STATE"
@@ -249,6 +253,7 @@ class TimerFragment : Fragment() {
         addBlockTimerView(state)
     }
 
+    // 🔹🔹🔹 보조 타이머 UI (00:00:00 형식 사용) 🔹🔹🔹
     private fun addBlockTimerView(state: TimerViewModel.ExtraTimer) {
         val root = layoutInflater.inflate(R.layout.timer_block, extraTimersContainer, false)
         val labelView = root.findViewById<TextView>(R.id.blockLabel)
@@ -257,7 +262,7 @@ class TimerFragment : Fragment() {
         val btnDel   = root.findViewById<Button>(R.id.blockDeleteBtn)
 
         fun render() {
-            tv.text = formatDuration4(state.remainingMs)
+            tv.text = formatDurationShort(state.remainingMs)  // 🔹 짧은 형식 사용
             btnStart.text = if (state.running) getString(R.string.btn_pause) else getString(R.string.btn_start)
             labelView.text = state.label
         }
@@ -273,55 +278,94 @@ class TimerFragment : Fragment() {
             }
         }
 
-        var cd: CountDownTimer? = null
-        fun stopCd() { cd?.cancel(); cd = null }
-        fun startCd() {
-            stopCd()
-            if (state.remainingMs <= 0L) return
-            cd = object : CountDownTimer(state.remainingMs, 10L) {
-                override fun onTick(ms: Long) {
-                    state.remainingMs = ms
-                    viewModel.setRemaining(state.id, ms)
-                    tv.text = formatDuration4(ms)
+        // 🔹 핵심: 종료 시각 기준으로 남은 시간 계산
+        val updateRunnable = object : Runnable {
+            override fun run() {
+                if (state.running) {
+                    // 🔹 종료 시각에서 현재 시각을 빼서 남은 시간 계산
+                    val endTime = extraTimerEndTimes[state.id] ?: 0L
+                    if (endTime > 0L) {
+                        val remain = (endTime - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
+                        state.remainingMs = remain
+                        viewModel.setRemaining(state.id, remain)
+                        tv.text = formatDurationShort(remain)  // 🔹 짧은 형식 사용
+
+                        // 타이머 종료 확인
+                        if (remain <= 0L) {
+                            state.running = false
+                            viewModel.setRunning(state.id, false)
+                            btnStart.text = getString(R.string.btn_start)
+                            tv.text = formatDurationShort(0L)  // 🔹 짧은 형식 사용
+                            extraTimerEndTimes.remove(state.id)
+                            AlarmService.start(requireContext(), state.label)
+                            runCatching { ClockService.stopExtraTimer(requireContext(), state.id) }
+                            return
+                        }
+                    }
+
+                    // 100ms마다 업데이트
+                    handler.postDelayed(this, 100L)
                 }
-                override fun onFinish() {
-                    state.remainingMs = 0L
-                    viewModel.setRemaining(state.id, 0L)
-                    viewModel.setRunning(state.id, false)
-                    btnStart.text = getString(R.string.btn_start)
-                    tv.text = formatDuration4(0L)
-                    AlarmService.start(requireContext(), state.label)
-                    runCatching { ClockService.stopExtraTimer(requireContext(), state.id) }
-                }
-            }.start()
+            }
         }
 
         btnStart.setOnClickListener {
             if (state.running) {
-                stopCd()
+                // 일시정지
+                handler.removeCallbacks(updateRunnable)
                 viewModel.setRunning(state.id, false)
                 state.running = false
                 btnStart.text = getString(R.string.btn_start)
+                extraTimerEndTimes.remove(state.id)
                 runCatching { ClockService.stopExtraTimer(requireContext(), state.id) }
             } else {
+                // 시작
+                if (state.remainingMs <= 0L) return@setOnClickListener
+
+                // 🔹 종료 시각 저장 (현재 시각 + 남은 시간)
+                extraTimerEndTimes[state.id] = SystemClock.elapsedRealtime() + state.remainingMs
+
                 viewModel.setRunning(state.id, true)
                 state.running = true
                 btnStart.text = getString(R.string.btn_pause)
-                startCd()
-                runCatching { ClockService.startExtraTimer(requireContext(), state.id, state.label, state.remainingMs) }
+
+                // ClockService 시작
+                runCatching {
+                    ClockService.startExtraTimer(
+                        requireContext(),
+                        state.id,
+                        state.label,
+                        state.remainingMs
+                    )
+                }
+
+                // UI 업데이트 시작
+                handler.post(updateRunnable)
             }
         }
 
         btnDel.setOnClickListener {
-            stopCd()
+            handler.removeCallbacks(updateRunnable)
+            extraTimerEndTimes.remove(state.id)
             viewModel.removeExtra(state.id)
             runCatching { ClockService.stopExtraTimer(requireContext(), state.id) }
             extraTimersContainer.removeView(root)
         }
 
-        if (state.running) {
-            startCd()
-            runCatching { ClockService.startExtraTimer(requireContext(), state.id, state.label, state.remainingMs) }
+        // 초기 상태가 실행 중이면 복원
+        if (state.running && state.remainingMs > 0L) {
+            // 🔹 종료 시각 복원
+            extraTimerEndTimes[state.id] = SystemClock.elapsedRealtime() + state.remainingMs
+
+            runCatching {
+                ClockService.startExtraTimer(
+                    requireContext(),
+                    state.id,
+                    state.label,
+                    state.remainingMs
+                )
+            }
+            handler.post(updateRunnable)
         }
 
         extraTimersContainer.addView(root)
@@ -468,6 +512,7 @@ class TimerFragment : Fragment() {
         currentTimeText.text = String.format(Locale.getDefault(), "%02d:%02d:%02d:%04d", h, m, s, ms)
     }
 
+    // 🔹 메인 타이머용 긴 형식 (00:00:00:0000)
     private fun formatDuration4(msTotal: Long): String {
         val m = max(0L, msTotal)
         val h = (m / 3_600_000) % 100
@@ -475,6 +520,15 @@ class TimerFragment : Fragment() {
         val s = (m / 1_000) % 60
         val ms4 = (m % 1_000) * 10
         return String.format(Locale.getDefault(), "%02d:%02d:%02d:%04d", h, mm, s, ms4)
+    }
+
+    // 🔹 보조 타이머용 짧은 형식 (00:00:00)
+    private fun formatDurationShort(msTotal: Long): String {
+        val m = max(0L, msTotal)
+        val h = (m / 3_600_000) % 100
+        val mm = (m / 60_000) % 60
+        val s = (m / 1_000) % 60
+        return String.format(Locale.getDefault(), "%02d:%02d:%02d", h, mm, s)
     }
 
     private fun showRenameDialog(target: TextView, onRenamed: ((String) -> Unit)? = null) {
@@ -500,5 +554,7 @@ class TimerFragment : Fragment() {
         super.onDestroyView()
         mainTimer?.cancel()
         ticker?.let { handler.removeCallbacks(it) }
+        handler.removeCallbacksAndMessages(null)
+        extraTimerEndTimes.clear()
     }
 }
