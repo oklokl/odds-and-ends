@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">K메트로놈</string>
+    <string name="notification_channel_name">메트로놈</string>
+    <string name="notification_channel_description">메트로놈 실행 상태 알림</string>
+    <string name="notification_title">메트로놈</string>
+    <string name="notification_running">실행 중</string>
+    <string name="notification_paused">일시정지</string>
+    <string name="action_play">재생</string>
+    <string name="action_pause">일시정지</string>
+    <string name="action_stop">중지</string>
+</resources>
