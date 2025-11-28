@@ -59,6 +59,7 @@ FFmpeg Manager는 Windows에서 FFmpeg를 **완전 자동으로** 설치하고 �
 ### 방법 1: Releases에서 다운로드
 1. [Releases](../../releases) 페이지 방문
 2. 최신 버전의 `ffmpeg_installer.bat` 다운로드
+3. https://cafe.daum.net/candan/I45l/53 배치 파일 못 만드시는 분은 하단에 있으니 그걸로 받으세요.
 
 ### 방법 2: Git Clone
 ```bash
