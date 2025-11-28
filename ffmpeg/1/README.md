@@ -404,7 +404,7 @@ FFmpeg Manager Log - 2025-11-28 14:10:50.41
 
 문제가 발생하거나 질문이 있으시면:
 - [Issues](../../issues) 페이지에서 이슈 생성
-- 이메일: your-email@example.com
+- 깃허브에 글 남겨 주세요
 
 ---
 
