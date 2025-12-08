@@ -10,12 +10,23 @@ data class MediaItem(
 
 val mediaList = listOf(
     MediaItem(
-        "공식 구마경",
+        "성수 기도",
+        R.raw.prayer_a_0,
+        """
+        주님, 이 성수로 세례의 은총을 새롭게 하시고
+        모든 악에서 보호하시어
+        깨끗한 마음으로 주님께 나아가게 하소서.
+        아멘
+        """.trimIndent()
+    ),
+    MediaItem(
+        "구마경",
         R.raw.prayer_a_1,
         "예수 그리스도의 이름으로 명하노니, 사탄아! 악령아! 물러가라!"
     ),
+
     MediaItem(
-        "공식 구마경 번역",
+        "구마경 번역",
         R.raw.prayer_a_2,
         """
         영광스러운 하늘 군대의 장수이신 성 미카엘 대천사여,
@@ -37,7 +48,7 @@ val mediaList = listOf(
         교회를 해치지 못하게 하소서.
 
         지극히 높으신 분 앞에 우리의 기도를 드려,
-        주님의 자비가 신속히 우리에게 임하게 하시고,
+        주님의 긍휼이 신속히 우리에게 임하게 하시고,
         옛 뱀, 곧 악마요 사탄인 그 용을 붙잡아 사슬에 묶어 심연으로 던져,
         다시는 민족들을 속이지 못하게 하소서.
 
@@ -57,7 +68,7 @@ val mediaList = listOf(
         """.trimIndent()
     ),
     MediaItem(
-        "공식구마경 원본",
+        "구마경 원본",
         R.raw.prayer_a_4,
         """
         Princeps gloriosissime caelestis militiae, sancte Michael Archangele, defende nos in proelio adversus principes et potestates, adversus mundi rectores tenebrarum, contra spiritualia nequitiae, in caelestibus.
@@ -89,7 +100,7 @@ val mediaList = listOf(
         교회를 해치지 못하게 하소서.
 
         저희 기도를 지극히 높으신 분께 올리시어,
-        주님의 자비가 속히 임하게 하시고,
+        주님의 긍휼이 속히 임하게 하시고,
         옛 뱀, 곧 악마요 사탄인 그 용을 붙잡아 사슬에 묶어
         심연 속으로 던져, 다시는 민족들을 속이지 못하게 하소서.
         아멘.
@@ -115,8 +126,8 @@ val mediaList = listOf(
         적들의 무리여, 물러가라.
         ✝ 유다 지파의 사자, 다윗의 후손께서 승리하셨도다.
 
-        주님, 자비를 베푸소서.
-        당신께 바라는 저희의 희망만큼 자비를 베푸소서.
+        주님, 긍휼을 베푸소서.
+        당신께 바라는 저희의 희망만큼 긍휼를 베푸소서.
         아멘
         """.trimIndent()
     ),

@@ -49,18 +49,11 @@ fun MediaScreen(
             )
             mediaController.prepare()
         }
+    }
 
-        val listener = object : Player.Listener {
-            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-                val index = mediaList.indexOfFirst { it.resourceId.toString() == mediaItem?.mediaId }
-                if (index != -1) onMediaIndexChange(index)
-            }
-
-            override fun onIsPlayingChanged(isPlayingNow: Boolean) {
-                onIsPlayingChange(isPlayingNow)
-            }
-        }
-        mediaController.addListener(listener)
+    val scrollState = rememberScrollState()
+    LaunchedEffect(currentMediaIndex) {
+        scrollState.scrollTo(0)
     }
 
     Column(
@@ -93,14 +86,13 @@ fun MediaScreen(
                     color = Color.Black
                 )
             }
-
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
                     .background(Color.White, shape = RoundedCornerShape(12.dp))
                     .padding(16.dp)
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
             ) {
                 Text(
                     text = mediaList.getOrNull(currentMediaIndex)?.description ?: "",
@@ -110,7 +102,6 @@ fun MediaScreen(
                 )
             }
         }
-
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -118,16 +109,15 @@ fun MediaScreen(
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
-
             Button(
                 onClick = {
                     if (currentMediaIndex > 0) {
-                        onMediaIndexChange(currentMediaIndex - 1)
                         mediaController.seekToPrevious()
-                        mediaController.play()
                     }
                 },
-                modifier = Modifier.weight(1f).height(60.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(60.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
             ) { Text("이전", color = Color.Black) }
 
@@ -137,7 +127,9 @@ fun MediaScreen(
                 onClick = {
                     if (isPlaying) mediaController.pause() else mediaController.play()
                 },
-                modifier = Modifier.weight(1f).height(60.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(60.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
             ) { Text(if (isPlaying) "정지" else "재생", color = Color.Black) }
 
@@ -146,12 +138,12 @@ fun MediaScreen(
             Button(
                 onClick = {
                     if (currentMediaIndex < mediaList.size - 1) {
-                        onMediaIndexChange(currentMediaIndex + 1)
                         mediaController.seekToNext()
-                        mediaController.play()
                     }
                 },
-                modifier = Modifier.weight(1f).height(60.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(60.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
             ) { Text("다음", color = Color.Black) }
         }

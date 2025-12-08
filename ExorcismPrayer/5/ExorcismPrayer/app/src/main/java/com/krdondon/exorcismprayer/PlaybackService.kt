@@ -23,7 +23,6 @@ class PlaybackService : MediaSessionService() {
         super.onCreate()
         createNotificationChannel()
 
-        // 오디오 설정
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(C.USAGE_MEDIA)
             .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
@@ -43,8 +42,6 @@ class PlaybackService : MediaSessionService() {
                 )
             )
             .build()
-
-        // Foreground Service 시작
         startForeground(1, createNotification("준비 중..."))
     }
 
