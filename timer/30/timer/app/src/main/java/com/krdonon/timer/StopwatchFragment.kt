@@ -47,7 +47,7 @@ class StopWatchFragment : Fragment() {
         arrayAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, viewModel.lapTimes)
         lapListView.adapter = arrayAdapter
 
-        // UI 업데이트 루프 (10ms 간격이면 충분합니다)
+        // UI 업데이트 루프
         updater = object : Runnable {
             override fun run() {
                 val elapsed = currentElapsed()
@@ -59,7 +59,7 @@ class StopWatchFragment : Fragment() {
         // 버튼 동작
         startStopButton.setOnClickListener {
             if (viewModel.isRunning) {
-                // 달리는 중에는 "계속"으로 표시되고 클릭 시 랩 기록
+                // 달리는 중에는 랩 기록
                 recordLapTime()
             } else {
                 startStopwatch()
@@ -68,30 +68,25 @@ class StopWatchFragment : Fragment() {
 
         lapResetButton.setOnClickListener { resetStopwatch() }
 
-        // 최초 진입 시에도 ViewModel 값으로 즉시 반영
         updateStopwatchText(currentElapsed())
         updateButtons()
 
         return view
     }
 
-    /** 화면이 보일 때 UI 루프 시작, 값 즉시 복원 */
     override fun onStart() {
         super.onStart()
         updater?.let { handler.post(it) }
         updateStopwatchText(currentElapsed())
         updateButtons()
-        // 리스트 어댑터도 ViewModel의 데이터 기반
         arrayAdapter.notifyDataSetChanged()
     }
 
-    /** 화면이 사라질 때 UI 루프 중지 (측정은 계속 진행됨) */
     override fun onStop() {
         super.onStop()
         updater?.let { handler.removeCallbacks(it) }
     }
 
-    /** 현재까지의 총 경과 시간(ms) */
     private fun currentElapsed(): Long {
         return if (viewModel.isRunning) {
             viewModel.accumulatedMs + (SystemClock.elapsedRealtime() - viewModel.startBaseMs)
@@ -105,16 +100,17 @@ class StopWatchFragment : Fragment() {
             viewModel.isRunning = true
             viewModel.startBaseMs = SystemClock.elapsedRealtime()
             updateButtons()
+
+            // ✅ 서비스 알림 시작
+            ClockService.startStopwatch(requireContext(), viewModel.accumulatedMs)
         }
     }
 
     private fun resetStopwatch() {
-        // 실행 중이면 일단 정지
         viewModel.isRunning = false
         viewModel.startBaseMs = 0L
         viewModel.accumulatedMs = 0L
 
-        // 랩 초기화
         viewModel.previousLapTotalMs = 0L
         viewModel.lapCount = 0
         viewModel.lapTimes.clear()
@@ -122,10 +118,12 @@ class StopWatchFragment : Fragment() {
 
         updateStopwatchText(0L)
         updateButtons()
+
+        // ✅ 서비스 알림 정지
+        ClockService.stopStopwatch(requireContext())
     }
 
     private fun recordLapTime() {
-        // 총 경과
         val total = max(0L, currentElapsed())
         val lap   = total - viewModel.previousLapTotalMs
         viewModel.previousLapTotalMs = total
@@ -135,32 +133,30 @@ class StopWatchFragment : Fragment() {
         val lapStr   = formatTime(lap)
         val row = String.format("%02d. %s (%s)", viewModel.lapCount, lapStr, totalStr)
 
-        // 최신 랩을 위로
         viewModel.lapTimes.add(0, row)
         arrayAdapter.notifyDataSetChanged()
         lapListView.smoothScrollToPosition(0)
     }
 
-    /** 시간 표시 → 00:00:00:0000 (시:분:초:천분 4자리) */
+    /** ✅ 밀리초 → 천분의 1초(밀리초) 단위 (000~999) */
     private fun updateStopwatchText(time: Long) {
         val h  = TimeUnit.MILLISECONDS.toHours(time)
         val m  = TimeUnit.MILLISECONDS.toMinutes(time) % 60
         val s  = TimeUnit.MILLISECONDS.toSeconds(time) % 60
-        val ms = time % 10000 // 4자리
-        stopwatchText.text = String.format("%02d:%02d:%02d:%04d", h, m, s, ms)
+        val ms = (time % 1000)
+        stopwatchText.text = String.format("%02d:%02d:%02d.%03d", h, m, s, ms)
     }
 
     private fun formatTime(time: Long): String {
         val h  = TimeUnit.MILLISECONDS.toHours(time)
         val m  = TimeUnit.MILLISECONDS.toMinutes(time) % 60
         val s  = TimeUnit.MILLISECONDS.toSeconds(time) % 60
-        val ms = time % 10000
-        return String.format("%02d:%02d:%02d:%04d", h, m, s, ms)
+        val ms = (time % 1000)
+        return String.format("%02d:%02d:%02d.%03d", h, m, s, ms)
     }
 
     private fun updateButtons() {
         if (viewModel.isRunning) {
-            // 기존 UX 유지: 달리는 중엔 오른쪽이 "초기화", 왼쪽이 "계속(랩)"
             startStopButton.text = "계속"
             lapResetButton.text = "초기화"
             lapResetButton.isEnabled = true
@@ -173,7 +169,6 @@ class StopWatchFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        // 메모리 누수 방지 (UI 루프만 중지; 측정은 ViewModel이 유지)
         updater?.let { handler.removeCallbacks(it) }
     }
 }
