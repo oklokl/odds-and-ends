@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/alarmAgainRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/timer_bg"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:id="@+id/currentTimeTitle"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:background="@drawable/bg_alarm_block"
+        android:gravity="start|center_vertical"
+        android:paddingStart="24dp"
+        android:paddingEnd="14dp"
+        android:text="현재 오전 시간 3:17"
+        android:textStyle="bold"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="20sp"
+        android:autoSizeMaxTextSize="48sp"
+        android:autoSizeStepGranularity="1sp" />
+
+    <TextView
+        android:id="@+id/alarmInfoText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:background="@drawable/bg_alarm_block"
+        android:gravity="start|center_vertical"
+        android:padding="16dp"
+        android:paddingStart="24dp"
+        android:text="이 알람은 요일 알람 입니다\n밀어서 해제하면 다시 1분 후에 알림이 울립니다\n총 3~5회 해제하면 완전 종료됩니다"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="12sp"
+        android:autoSizeMaxTextSize="18sp"
+        android:autoSizeStepGranularity="1sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="22dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/alarmAgainTitle"
+            android:layout_width="0dp"
+            android:layout_height="80dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_alarm_block"
+            android:gravity="start|center_vertical"
+            android:paddingStart="24dp"
+            android:text="알람!"
+            android:textStyle="bold"
+            android:autoSizeTextType="uniform"
+            android:autoSizeMinTextSize="18sp"
+            android:autoSizeMaxTextSize="40sp"
+            android:autoSizeStepGranularity="1sp" />
+
+        <TextView
+            android:id="@+id/alarmAgainCount"
+            android:layout_width="110dp"
+            android:layout_height="80dp"
+            android:layout_marginStart="12dp"
+            android:background="@drawable/bg_alarm_block"
+            android:gravity="center"
+            android:padding="14dp"
+            android:text="1회"
+            android:textStyle="bold"
+            android:autoSizeTextType="uniform"
+            android:autoSizeMinTextSize="16sp"
+            android:autoSizeMaxTextSize="36sp"
+            android:autoSizeStepGranularity="1sp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/alarmAgainLabel"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginTop="14dp"
+        android:background="@drawable/bg_alarm_block"
+        android:gravity="start|center_vertical"
+        android:paddingStart="24dp"
+        android:text="알람 이름"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="14sp"
+        android:autoSizeMaxTextSize="28sp"
+        android:autoSizeStepGranularity="1sp" />
+
+    <SeekBar
+        android:id="@+id/sliderDismissAgain"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginTop="22dp"
+        android:max="100" />
+
+    <TextView
+        android:id="@+id/alarmAgainHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
+        android:text="→ 끝까지 밀면 꺼집니다"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="12sp"
+        android:autoSizeMaxTextSize="20sp"
+        android:autoSizeStepGranularity="1sp" />
+
+    <Button
+        android:id="@+id/btnFullDismiss"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:layout_marginTop="22dp"
+        android:background="@drawable/bg_alarm_block"
+        android:gravity="center"
+        android:padding="14dp"
+        android:text="완전 해제"
+        android:textStyle="bold"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="14sp"
+        android:autoSizeMaxTextSize="26sp"
+        android:autoSizeStepGranularity="1sp" />
+
+</LinearLayout>
