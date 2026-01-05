@@ -1,0 +1,25 @@
+<resources>
+    <!-- 알람 풀스크린 전용 테마 -->
+    <style name="Theme.Timer.FullScreen" parent="Theme.Material3.Light.NoActionBar">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowAllowReturnTransitionOverlap">true</item>
+    </style>
+
+    <!-- 미니 달력 기본 스타일 (MiniCalendar.XXX의 암묵적 parent) -->
+    <style name="MiniCalendar">
+        <item name="android:textColor">@color/black</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <!-- 미니 달력 요일 헤더 스타일 -->
+    <style name="MiniCalendar.Weekday">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textColor">@color/black</item>
+    </style>
+</resources>
