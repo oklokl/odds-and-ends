@@ -1,0 +1,114 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+
+    <string name="app_name">내일 타이머</string>
+
+
+    <string name="label_tomorrow">내일</string>
+    <string name="label_tomorrow_checked">내일 ✔</string>
+    <string name="label_am">오전</string>
+    <string name="label_pm">오후</string>
+    <string name="label_hour">시간</string>
+    <string name="label_minute">분</string>
+    <string name="label_second">초</string>
+    <string name="label_thousandth">천분</string>
+
+
+    <string name="zero_hhmmss_mmmm">00:00:00.000</string>
+    <string name="next_time_prefix">알림 울릴 시간 %1$s</string>
+    <string name="now_time_format">현재 시간 %1$02d:%2$02d:%3$02d.%4$03d %5$s</string>
+
+
+    <string name="btn_next">다음</string>
+    <string name="btn_start">시작</string>
+    <string name="btn_pause">일시정지</string>
+    <string name="btn_resume">다시시작</string>
+    <string name="btn_reset">초기화</string>
+    <string name="btn_stop">중지</string>
+    <string name="btn_add">추가</string>
+    <string name="btn_mode_vibrate">진동</string>
+    <string name="btn_mode_sound">소리</string>
+
+
+    <string name="preset_10min">10분</string>
+    <string name="preset_15min">15분</string>
+    <string name="preset_30min">30분</string>
+
+
+    <string name="label_timer">타이머</string>
+    <string name="desc_toggle">타이머 일시정지/다시시작</string>
+    <string name="desc_stop">타이머 중지</string>
+
+
+    <string name="timer_add_title">타이머 이름</string>
+    <string name="timer_name_hint">예: 점심 알람</string>
+    <string name="timer_default_name">%1$d 번 타이머</string>
+    <string name="timer_default">타이머</string>
+    <string name="delete">삭제</string>
+
+
+    <string name="alarm_title">타이머 완료!</string>
+    <string name="alarm_swipe">→ 끝까지 밀면 꺼집니다</string>
+
+
+    <string name="digit_0">0</string>
+    <string name="digit_1">1</string>
+    <string name="digit_2">2</string>
+    <string name="digit_3">3</string>
+    <string name="digit_4">4</string>
+    <string name="digit_5">5</string>
+    <string name="digit_6">6</string>
+    <string name="digit_7">7</string>
+    <string name="digit_8">8</string>
+    <string name="digit_9">9</string>
+    <string name="arrow_back">←</string>
+    <string name="now_on_pad_text">현재 시간 00:00:00.000 오전</string>
+
+    <string name="alarm_cancel">취소</string>
+    <string name="alarm_save">저장</string>
+    <string name="alarm_days">요일</string>
+    <string name="alarm_every_week">매주</string>
+    <string name="alarm_calendar">달력</string>
+    <string name="alarm_name">알람 이름</string>
+    <string name="alarm_name_hint">예) 기상</string>
+    <string name="alarm_sound">알림음</string>
+    <string name="alarm_vibrate">진동</string>
+    <string name="alarm_snooze">다시 울림</string>
+    <string name="alarm_enabled">알람 활성화</string>
+    <string name="alarm_change_sound">소리 변경</string>
+    <string name="alarm_sound_current_default">기본: alarm_sound.mp3</string>
+    <string name="alarm_sound_current_custom">사용자: %1$s</string>
+    <string name="alarm_sound_pick_failed">선택한 파일을 사용할 수 없어 기본 소리로 되돌렸습니다.</string>
+    <string name="day_sun">일</string>
+    <string name="day_mon">월</string>
+    <string name="day_tue">화</string>
+    <string name="day_wed">수</string>
+    <string name="day_thu">목</string>
+    <string name="day_fri">금</string>
+    <string name="day_sat">토</string>
+    <string name="snooze_5m">5분</string>
+    <string name="snooze_10m">10분</string>
+    <string name="snooze_15m">15분</string>
+    <string name="snooze_20m">20분</string>
+    <string name="snooze_30m">30분</string>
+    <string name="snooze_custom">사용자</string>
+    <string name="snooze_custom_fmt">사용자(%1$d분)</string>
+    <string name="snooze_custom_title">사용자 설정</string>
+    <string name="snooze_custom_message">1분부터 60분까지 선택할 수 있습니다.</string>
+
+    <string name="snooze_3x">3회</string>
+    <string name="snooze_5x">5회</string>
+    <string name="snooze_forever">계속</string>
+
+    <string name="alarm_time">시간</string>
+    <string name="alarm_now_datetime">현재 %1$s</string>
+    <string name="alarm_now_datetime_placeholder">현재 년도, 월, 일, 요일, 오전/오후, 시간, 분, 초</string>
+
+    <!-- 미니 달력(팝업) -->
+    <string name="calendar_today">오늘</string>
+    <string name="calendar_close">나가기</string>
+    <string name="calendar_month_title_fmt">%1$d년 %2$d월</string>
+
+    <string name="alarm_groups">그룹</string>
+    <string name="alarm_move_group">그룹</string>
+</resources>
