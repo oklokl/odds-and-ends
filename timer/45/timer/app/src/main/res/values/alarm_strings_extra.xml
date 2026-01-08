@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    
+    <string name="alarm_empty">모든 알람이 꺼진 상태입니다</string>
+    <string name="alarm_add">알람 추가</string>
+
+    
+    <string name="alarm_am">오전</string>
+    <string name="alarm_pm">오후</string>
+
+    
+    <string name="alarm_no_days">요일 없음</string>
+
+    
+    <string name="alarm_selected_count">%1$d개 선택됨</string>
+    <string name="alarm_delete_confirm">선택한 알람을 삭제할까요?</string>
+    </resources>
