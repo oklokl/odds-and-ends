@@ -12,8 +12,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:grantUriPermissions="true"
-            android:windowSoftInputMode="adjustResize">
+            android:grantUriPermissions="true">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -8,7 +8,6 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.provider.OpenableColumns
-import android.util.Base64
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
@@ -34,21 +33,6 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 
 private const val PREFS_OPEN_URI_CACHE = "open_uri_cache_v1"
-
-private const val NAV_B64_FLAGS = Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING
-
-private fun navEncode(raw: String): String =
-    Base64.encodeToString(raw.toByteArray(Charsets.UTF_8), NAV_B64_FLAGS)
-
-private fun navDecode(raw: String): String {
-    return runCatching {
-        String(Base64.decode(raw, NAV_B64_FLAGS), Charsets.UTF_8)
-    }.getOrElse {
-        // Backward-compat: old builds used URLEncoder/URLDecoder
-        runCatching { URLDecoder.decode(raw, Charsets.UTF_8.name()) }.getOrDefault(raw)
-    }
-}
-
 
 private fun loadCachedPdfUri(context: Context, fileName: String): Uri? {
     val key = "pdf:$fileName"
@@ -198,30 +182,21 @@ fun MainScreen(
             scope.launch {
                 val linkedTxt = FileManager.findLinkedTxtFile(context, req.name)
                 if (linkedTxt != null) {
-                    val eUri = navEncode(linkedTxt.uri.toString())
-                    val eName = navEncode(linkedTxt.name)
+                    val eUri = URLEncoder.encode(linkedTxt.uri.toString(), Charsets.UTF_8.name())
+                    val eName = URLEncoder.encode(linkedTxt.name, Charsets.UTF_8.name())
                     navController.navigate("${Routes.EDITOR}/$eUri/$eName/true")
                 } else {
-                    val eUri = navEncode(req.uri.toString())
-                    val eName = navEncode(req.name)
+                    val eUri = URLEncoder.encode(req.uri.toString(), Charsets.UTF_8.name())
+                    val eName = URLEncoder.encode(req.name, Charsets.UTF_8.name())
                     navController.navigate("${Routes.PDF_VIEWER}/$eUri/$eName")
                 }
                 onOpenRequestConsumed()
             }
         } else {
-            // If the file comes from an external file manager (SAF), copy it into Downloads so:
-            // 1) it appears in our downloads-based list
-            // 2) we can reopen it reliably later without depending on persisted SAF permissions
-            scope.launch {
-                val ensured = FileManager.ensureInDownloads(context, req.uri, req.name)
-                if (ensured != null) refreshKey++
-
-                val openUri = ensured ?: req.uri
-                val eUri = navEncode(openUri.toString())
-                val eName = navEncode(req.name)
-                navController.navigate("${Routes.EDITOR}/$eUri/$eName/false")
-                onOpenRequestConsumed()
-            }
+            val eUri = URLEncoder.encode(req.uri.toString(), Charsets.UTF_8.name())
+            val eName = URLEncoder.encode(req.name, Charsets.UTF_8.name())
+            navController.navigate("${Routes.EDITOR}/$eUri/$eName/false")
+            onOpenRequestConsumed()
         }
     }
 
@@ -235,18 +210,18 @@ fun MainScreen(
                         scope.launch {
                             val linkedTxt = FileManager.findLinkedTxtFile(context, item.name)
                             if (linkedTxt != null) {
-                                val eUri = navEncode(linkedTxt.uri.toString())
-                                val eName = navEncode(linkedTxt.name)
+                                val eUri = URLEncoder.encode(linkedTxt.uri.toString(), Charsets.UTF_8.name())
+                                val eName = URLEncoder.encode(linkedTxt.name, Charsets.UTF_8.name())
                                 navController.navigate("${Routes.EDITOR}/$eUri/$eName/true")
                             } else {
-                                val eUri = navEncode(item.uri.toString())
-                                val eName = navEncode(item.name)
+                                val eUri = URLEncoder.encode(item.uri.toString(), Charsets.UTF_8.name())
+                                val eName = URLEncoder.encode(item.name, Charsets.UTF_8.name())
                                 navController.navigate("${Routes.PDF_VIEWER}/$eUri/$eName")
                             }
                         }
                     } else {
-                        val eUri = navEncode(item.uri.toString())
-                        val eName = navEncode(item.name)
+                        val eUri = URLEncoder.encode(item.uri.toString(), Charsets.UTF_8.name())
+                        val eName = URLEncoder.encode(item.name, Charsets.UTF_8.name())
                         navController.navigate("${Routes.EDITOR}/$eUri/$eName/false")
                     }
                 },
@@ -257,14 +232,14 @@ fun MainScreen(
                     }
                 },
                 onNewDocument = {
-                    val eName = navEncode(defaultDocName())
-                    // NOTE: keep the literal token "new" (do not encode), so the Editor route can detect it reliably.
-                    navController.navigate("${Routes.EDITOR}/new/$eName/false")
+                    val eUri = URLEncoder.encode("new", Charsets.UTF_8.name())
+                    val eName = URLEncoder.encode(defaultDocName(), Charsets.UTF_8.name())
+                    navController.navigate("${Routes.EDITOR}/$eUri/$eName/false")
                 },
                 onImportCompleted = { refreshKey++ },
                 onViewPdf = { item ->
-                    val eUri = navEncode(item.uri.toString())
-                    val eName = navEncode(item.name)
+                    val eUri = URLEncoder.encode(item.uri.toString(), Charsets.UTF_8.name())
+                    val eName = URLEncoder.encode(item.name, Charsets.UTF_8.name())
                     navController.navigate("${Routes.PDF_VIEWER}/$eUri/$eName")
                 }
             )
@@ -279,8 +254,8 @@ fun MainScreen(
         ) { backStackEntry ->
             val rawUri = backStackEntry.arguments?.getString(Routes.ARG_URI) ?: ""
             val rawName = backStackEntry.arguments?.getString(Routes.ARG_NAME) ?: "PDF"
-            val fileName = navDecode(rawName)
-            val pdfUri = Uri.parse(navDecode(rawUri))
+            val fileName = URLDecoder.decode(rawName, Charsets.UTF_8.name())
+            val pdfUri = Uri.parse(URLDecoder.decode(rawUri, Charsets.UTF_8.name()))
 
             PdfViewerScreen(
                 pdfUri = pdfUri,
@@ -302,9 +277,10 @@ fun MainScreen(
             val rawName = backStackEntry.arguments?.getString(Routes.ARG_NAME) ?: defaultDocName()
             val isPdfLinked = backStackEntry.arguments?.getBoolean(Routes.ARG_IS_PDF) ?: false
 
-            val fileName = navDecode(rawName)
-            val decodedUri = if (rawUri == "new") "new" else navDecode(rawUri)
-            val existingUri: Uri? = if (decodedUri == "new") null else Uri.parse(decodedUri)
+            val fileName = URLDecoder.decode(rawName, Charsets.UTF_8.name())
+            val existingUri: Uri? =
+                if (rawUri == "new") null
+                else Uri.parse(URLDecoder.decode(rawUri, Charsets.UTF_8.name()))
 
             var isLoading by remember { mutableStateOf(existingUri != null) }
             var initialText by remember(existingUri) { mutableStateOf("") }

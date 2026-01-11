@@ -11,20 +11,9 @@ import android.os.ParcelFileDescriptor
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.TextSnippet
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -32,33 +21,24 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
-import com.tom_roush.pdfbox.text.PDFTextStripper
 import com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException
-import com.krdondon.txt.pdf.PageTextLayout
-import com.krdondon.txt.pdf.CharBox
-import com.krdondon.txt.pdf.extractPageTextLayout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.math.abs
-import kotlin.math.min
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -79,17 +59,6 @@ fun PdfViewerScreen(
 
     // 확대 상태일 때는 페이지 넘김(세로 스크롤) 잠금
     var pagerScrollEnabled by remember { mutableStateOf(true) }
-
-    // 현재 페이지/총 페이지 (상단바 및 텍스트 보기용)
-    var currentPageIndex by remember { mutableIntStateOf(0) }
-    var totalPages by remember { mutableIntStateOf(0) }
-
-    // ===== 텍스트 보기(선택/복사) 바텀시트 상태 =====
-    val clipboard = LocalClipboardManager.current
-    var showTextSheet by remember { mutableStateOf(false) }
-    var sheetPageIndex by remember { mutableIntStateOf(0) }
-    var extractedText by remember { mutableStateOf<String?>(null) }
-    var extractingText by remember { mutableStateOf(false) }
 
     // ===== 암호 입력 다이얼로그 상태 =====
     var showPasswordDialog by remember { mutableStateOf(false) }
@@ -237,105 +206,11 @@ fun PdfViewerScreen(
         )
     }
 
-
-    // ===== 텍스트 보기(선택/복사) 바텀시트 =====
-    if (showTextSheet && handle != null) {
-        LaunchedEffect(sheetPageIndex, handle, currentUri) {
-            extractingText = true
-            extractedText = null
-            try {
-                extractedText = extractPageText(context, handle!!, currentUri, sheetPageIndex)
-            } catch (t: Throwable) {
-                extractedText = "텍스트 추출 실패: " + (t.message ?: t.javaClass.simpleName)
-            } finally {
-                extractingText = false
-            }
-        }
-
-        ModalBottomSheet(
-            onDismissRequest = { showTextSheet = false },
-            dragHandle = { BottomSheetDefaults.DragHandle() }
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "텍스트 (${sheetPageIndex + 1} / ${totalPages.coerceAtLeast(1)})",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(
-                            onClick = {
-                                val all = extractedText.orEmpty()
-                                clipboard.setText(AnnotatedString(all))
-                            },
-                            enabled = !extractingText && !extractedText.isNullOrBlank()
-                        ) { Text("전체 복사") }
-
-                        TextButton(onClick = { showTextSheet = false }) { Text("닫기") }
-                    }
-                }
-
-                Text(
-                    text = "주의: 이 화면은 PDFBox로 텍스트를 추출한 결과입니다. 원본 레이아웃/줄바꿈은 다를 수 있습니다.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                if (extractingText) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) { CircularProgressIndicator() }
-                } else {
-                    val scroll = rememberScrollState()
-                    Surface(
-                        shape = MaterialTheme.shapes.medium,
-                        tonalElevation = 1.dp,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        SelectionContainer {
-                            Text(
-                                text = extractedText.orEmpty(),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp)
-                                    .heightIn(min = 200.dp, max = 520.dp)
-                                    .verticalScroll(scroll),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
-                actions = {
-                    IconButton(
-                        onClick = {
-                            sheetPageIndex = currentPageIndex
-                            showTextSheet = true
-                        },
-                        enabled = handle != null && !loading && error == null
-                    ) {
-                        Icon(Icons.Outlined.TextSnippet, contentDescription = "텍스트")
-                    }
-                }
+                navigationIcon = { TextButton(onClick = onBack) { Text("Back") } }
             )
         }
     ) { padding ->
@@ -380,12 +255,6 @@ fun PdfViewerScreen(
 
                     val pagerState = rememberPagerState(pageCount = { pageCount })
 
-                    totalPages = pageCount
-
-                    LaunchedEffect(pagerState.currentPage) {
-                        currentPageIndex = pagerState.currentPage
-                    }
-
                     Box(Modifier.fillMaxSize()) {
 
                         VerticalPager(
@@ -395,7 +264,6 @@ fun PdfViewerScreen(
                         ) { pageIndex ->
                             ZoomablePdfPage(
                                 handle = handle!!,
-                                sourceUri = currentUri,
                                 pageIndex = pageIndex,
                                 pageCount = pageCount,
                                 viewportWidthPx = viewportWidthPx,
@@ -461,18 +329,12 @@ fun PdfViewerScreen(
 @Composable
 private fun ZoomablePdfPage(
     handle: PdfHandle,
-    sourceUri: Uri,
     pageIndex: Int,
     pageCount: Int,
     viewportWidthPx: Int,
     viewportHeightPx: Int,
     onZoomActiveChanged: (Boolean) -> Unit
 ) {
-    val context = LocalContext.current
-    val clipboard = LocalClipboardManager.current
-    val scope = rememberCoroutineScope()
-    val density = LocalDensity.current
-
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
@@ -490,32 +352,10 @@ private fun ZoomablePdfPage(
         value = renderPage(handle, pageIndex, targetWidth)
     }
 
-    // ===== 텍스트 레이어(글자 박스) 로드: 부분 선택을 위해 필요 =====
-    val layoutState by produceState<PageTextLayout?>(
-        initialValue = null,
-        key1 = pageIndex,
-        key2 = sourceUri,
-        key3 = handle.tempFile?.absolutePath
-    ) {
-        value = try {
-            extractPageTextLayout(context, sourceUri, handle.tempFile, pageIndex)
-        } catch (_: Throwable) {
-            null
-        }
-    }
-
-    var containerSize by remember { mutableStateOf(IntSize.Zero) }
-
-    var selectionStart by remember { mutableStateOf<Offset?>(null) }
-    var selectionRect by remember { mutableStateOf<Rect?>(null) }
-    var selectedText by remember { mutableStateOf("") }
-    var showContextMenu by remember { mutableStateOf(false) }
-    var contextMenuOffset by remember { mutableStateOf(DpOffset(0.dp, 0.dp)) }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+            .padding(horizontal = 14.dp, vertical = 14.dp),
         contentAlignment = Alignment.Center
     ) {
         Card(
@@ -566,172 +406,21 @@ private fun ZoomablePdfPage(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .onSizeChanged { containerSize = it }
-                            // 롱프레스 후 드래그: 사각형 영역 선택
-                            .pointerInput(bmpState, layoutState, scale, offset, containerSize) {
-                                detectDragGesturesAfterLongPress(
-                                    onDragStart = { down ->
-                                        showContextMenu = false
-                                        selectedText = ""
-
-                                        // 외부 좌표 -> 콘텐츠(변환 전) 좌표로 역변환
-                                        val p = Offset(
-                                            x = (down.x - offset.x) / scale,
-                                            y = (down.y - offset.y) / scale
-                                        )
-                                        selectionStart = p
-                                        selectionRect = Rect(p, p)
-                                    },
-                                    onDrag = { change, dragAmount ->
-                                        change.consume()
-                                        val start = selectionStart ?: return@detectDragGesturesAfterLongPress
-                                        val p = Offset(
-                                            x = (change.position.x - offset.x) / scale,
-                                            y = (change.position.y - offset.y) / scale
-                                        )
-                                        selectionRect = Rect(start, p)
-                                    },
-                                    onDragEnd = {
-                                        val rect = selectionRect
-                                        val layout = layoutState
-                                        val bmp = bmpState
-                                        if (rect == null || layout == null || bmp == null) {
-                                            selectedText = ""
-                                            showContextMenu = false
-                                            return@detectDragGesturesAfterLongPress
-                                        }
-
-                                        val containerW = containerSize.width.toFloat()
-                                        val containerH = containerSize.height.toFloat()
-                                        if (containerW <= 0f || containerH <= 0f) return@detectDragGesturesAfterLongPress
-
-                                        val bmpW = bmp.width.toFloat()
-                                        val bmpH = bmp.height.toFloat()
-                                        val fitScale = min(containerW / bmpW, containerH / bmpH)
-                                        val dispW = bmpW * fitScale
-                                        val dispH = bmpH * fitScale
-                                        val padX = (containerW - dispW) / 2f
-                                        val padY = (containerH - dispH) / 2f
-
-                                        fun charRect(cb: CharBox): Rect {
-                                            val left = padX + (cb.xPt / layout.pageWidthPt) * dispW
-                                            val top = padY + (cb.yTopPt / layout.pageHeightPt) * dispH
-                                            val w = (cb.wPt / layout.pageWidthPt) * dispW
-                                            val h = (cb.hPt / layout.pageHeightPt) * dispH
-                                            return Rect(left, top, left + w, top + h)
-                                        }
-
-                                        val norm = Rect(
-                                            left = min(rect.left, rect.right),
-                                            top = min(rect.top, rect.bottom),
-                                            right = maxOf(rect.left, rect.right),
-                                            bottom = maxOf(rect.top, rect.bottom)
-                                        )
-
-                                        val picked = layout.chars
-                                            .asSequence()
-                                            .filter { cb ->
-                                                val r = charRect(cb)
-                                                r.overlaps(norm)
-                                            }
-                                            .sortedBy { it.index }
-                                            .map { it.text }
-                                            .joinToString(separator = "")
-                                            .trim()
-
-                                        selectedText = picked
-                                        showContextMenu = picked.isNotBlank()
-
-                                        if (picked.isNotBlank()) {
-                                            val endContent = norm.bottomRight
-                                            val endOuter = Offset(
-                                                x = endContent.x * scale + offset.x,
-                                                y = endContent.y * scale + offset.y
-                                            )
-                                            contextMenuOffset = with(density) {
-                                                DpOffset(endOuter.x.toDp(), endOuter.y.toDp())
-                                            }
-                                        }
-                                    },
-                                    onDragCancel = {
-                                        selectionRect = null
-                                        selectionStart = null
-                                        selectedText = ""
-                                        showContextMenu = false
-                                    }
-                                )
-                            }
+                            .padding(12.dp)
                     ) {
-                        // 이미지 + 선택 하이라이트를 같은 레이어에 두고 함께 zoom/pan 변환 적용
-                        Box(
+                        Image(
+                            bitmap = bmpState!!.asImageBitmap(),
+                            contentDescription = "page ${pageIndex + 1}",
                             modifier = Modifier
-                                .fillMaxSize()
+                                .fillMaxWidth()
+                                .align(Alignment.TopCenter)
                                 .graphicsLayer {
                                     scaleX = scale
                                     scaleY = scale
                                     translationX = offset.x
                                     translationY = offset.y
                                 }
-                        ) {
-                            Image(
-                                bitmap = bmpState!!.asImageBitmap(),
-                                contentDescription = "page ${pageIndex + 1}",
-                                contentScale = ContentScale.Fit,
-                                modifier = Modifier.fillMaxSize()
-                            )
-
-                            // 선택 하이라이트 오버레이
-                            Canvas(modifier = Modifier.fillMaxSize()) {
-                                val rect = selectionRect ?: return@Canvas
-                                val bmp = bmpState ?: return@Canvas
-                                val layout = layoutState ?: return@Canvas
-
-                                // 선택 사각형(드래그 범위) 시각화
-                                drawRect(
-                                    color = Color(0x3333B5E5),
-                                    topLeft = rect.topLeft,
-                                    size = rect.size
-                                )
-
-                                val containerW = size.width
-                                val containerH = size.height
-                                val bmpW = bmp.width.toFloat()
-                                val bmpH = bmp.height.toFloat()
-                                val fitScale = min(containerW / bmpW, containerH / bmpH)
-                                val dispW = bmpW * fitScale
-                                val dispH = bmpH * fitScale
-                                val padX = (containerW - dispW) / 2f
-                                val padY = (containerH - dispH) / 2f
-
-                                fun charRect(cb: CharBox): Rect {
-                                    val left = padX + (cb.xPt / layout.pageWidthPt) * dispW
-                                    val top = padY + (cb.yTopPt / layout.pageHeightPt) * dispH
-                                    val w = (cb.wPt / layout.pageWidthPt) * dispW
-                                    val h = (cb.hPt / layout.pageHeightPt) * dispH
-                                    return Rect(left, top, left + w, top + h)
-                                }
-
-                                val norm = Rect(
-                                    left = min(rect.left, rect.right),
-                                    top = min(rect.top, rect.bottom),
-                                    right = maxOf(rect.left, rect.right),
-                                    bottom = maxOf(rect.top, rect.bottom)
-                                )
-
-                                // 실제로 선택된 텍스트 영역(글자 박스) 하이라이트
-                                layout.chars.asSequence()
-                                    .filter { cb -> charRect(cb).overlaps(norm) }
-                                    .take(5000) // 안전장치: 지나치게 많은 렌더 방지
-                                    .forEach { cb ->
-                                        val r = charRect(cb)
-                                        drawRect(
-                                            color = Color(0x5533B5E5),
-                                            topLeft = r.topLeft,
-                                            size = r.size
-                                        )
-                                    }
-                            }
-                        }
+                        )
 
                         Surface(
                             tonalElevation = 2.dp,
@@ -744,44 +433,6 @@ private fun ZoomablePdfPage(
                                 text = "${pageIndex + 1} / $pageCount",
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                                 style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-
-                        // 컨텍스트 메뉴 (선택 영역이 있을 때)
-                        DropdownMenu(
-                            expanded = showContextMenu,
-                            onDismissRequest = { showContextMenu = false },
-                            offset = contextMenuOffset
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("복사") },
-                                onClick = {
-                                    if (selectedText.isNotBlank()) {
-                                        clipboard.setText(AnnotatedString(selectedText))
-                                    }
-                                    showContextMenu = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("페이지 전체 복사") },
-                                onClick = {
-                                    scope.launch {
-                                        try {
-                                            val full = extractPageText(context, handle, sourceUri, pageIndex)
-                                            if (full.isNotBlank()) clipboard.setText(AnnotatedString(full))
-                                        } catch (_: Throwable) {
-                                        }
-                                    }
-                                    showContextMenu = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("선택 해제") },
-                                onClick = {
-                                    selectionRect = null
-                                    selectedText = ""
-                                    showContextMenu = false
-                                }
                             )
                         }
                     }
@@ -852,32 +503,6 @@ private fun decryptPdfToCache(context: Context, uri: Uri, password: String): Fil
     }
 
     return outFile
-}
-
-
-private suspend fun extractPageText(
-    context: Context,
-    handle: PdfHandle,
-    uri: Uri,
-    pageIndex: Int
-): String = withContext(Dispatchers.IO) {
-    PDFBoxResourceLoader.init(context)
-
-    val doc = if (handle.tempFile != null && handle.tempFile.exists()) {
-        PDDocument.load(handle.tempFile)
-    } else {
-        val input = context.contentResolver.openInputStream(uri)
-            ?: throw IllegalStateException("Cannot open input stream for: $uri")
-        input.use { PDDocument.load(it) }
-    }
-
-    doc.use {
-        val stripper = PDFTextStripper()
-        val page = pageIndex + 1
-        stripper.startPage = page
-        stripper.endPage = page
-        stripper.getText(it).trim()
-    }
 }
 
 private fun isPasswordRequired(t: Throwable): Boolean {

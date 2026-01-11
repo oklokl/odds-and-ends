@@ -255,7 +255,7 @@ fun EditorScreen(
         }
     ) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).imePadding().padding(16.dp)
+            modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)
         ) {
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
 
