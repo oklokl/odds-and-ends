@@ -1,0 +1,27 @@
+태그
+[Intro] → 인트로 (도입부)
+[Verse] → 벌스 (노래의 주요 부분)
+[Pre-Chorus] → 프리코러스 (후렴 직전)
+[Chorus] → 코러스 (후렴)
+
+[Bridge] → 브리지 (변화 주는 부분)
+
+[Outro] → 아웃트로 (마무리)
+
+[Instrumental] → 연주 부분
+
+
+[Guitar solo] 기타 솔로
+[Female solo] 여성 솔로
+[Male solo] 남자 솔로
+[Emotional Bridge] 감정이 고조 되면서 변화 되는 부분
+[Catchy Hook] 이부분 반복
+[Powerful Outro] 클라이 막스 마무리
+
+기타
+1. **[Duet Performance]** – 남녀 듀엣을 의미하며, 두 사람이 함께 부르는 파트를 강조할 때 사용됩니다.  
+2. **[Male-Female Harmony]** – 남성과 여성이 조화를 이루며 부르는 부분을 나타냅니다.  
+3. **[Call & Response]** – 한 사람이 먼저 부르고, 다른 사람이 응답하는 형태의 보컬 구성을 의미합니다.  
+4. **[Layered Vocals]** – 남녀 보컬이 겹쳐져서 화음을 이루는 부분을 강조하는 태그입니다.  
+5. **[Emotional Bridge] Duet Version** – 감정을 연결하는 중요한 부분을 남녀가 함께 부를 때 사용할 수 있습니다.  
+
