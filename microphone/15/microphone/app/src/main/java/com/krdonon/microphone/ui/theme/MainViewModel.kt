@@ -84,6 +84,14 @@ class MainViewModel(context: Context) : ViewModel() {
         }
     }
 
+    // 녹음 파일을 공개 Music 폴더로 내보내기
+    fun exportRecordingToMusic(recording: RecordingFile) {
+        viewModelScope.launch {
+            recordingRepository.exportRecordingToMusic(recording)
+        }
+    }
+
+
 
 
     fun emptyTrash() {

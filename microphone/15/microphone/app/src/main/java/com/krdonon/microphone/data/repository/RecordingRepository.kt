@@ -1,5 +1,8 @@
 package com.krdonon.microphone.data.repository
 
+import android.content.ContentValues
+import android.os.Build
+import android.provider.MediaStore
 import android.content.Context
 import android.media.MediaMetadataRetriever
 import android.os.Environment
@@ -33,19 +36,25 @@ class RecordingRepository(private val context: Context) {
         loadTrashMetadata()
     }
 
+    // 파일 상단 import 쪽은 그대로 두고, 함수만 교체하시면 됩니다.
     fun getRecordingsDirectory(storagePath: String = ""): File {
+        // 1) 기본은 앱 전용 외부 저장소 (/Android/data/.../files/Music/)
         val baseDir = if (storagePath.isEmpty()) {
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC)
+            // 외부 저장소가 없을 때를 대비해 내부 저장소로 fallback
+            context.getExternalFilesDir(Environment.DIRECTORY_MUSIC) ?: context.filesDir
         } else {
             File(storagePath)
         }
 
+        // 2) 그 안에 우리 앱용 하위 폴더 생성
         val recordingsDir = File(baseDir, "krdondon_mic")
         if (!recordingsDir.exists()) {
             recordingsDir.mkdirs()
         }
         return recordingsDir
     }
+
+
 
     fun getTrashDirectory(): File {
         val trashDir = File(context.filesDir, "trash")
@@ -155,6 +164,78 @@ class RecordingRepository(private val context: Context) {
             null
         }
     }
+
+    // ─────────────────────────────────────────────
+    //  내보내기: 앱 전용 폴더 → 공개 Music 폴더
+    // ─────────────────────────────────────────────
+    suspend fun exportRecordingToMusic(recording: RecordingFile): Boolean =
+        withContext(Dispatchers.IO) {
+            try {
+                val sourceFile = File(recording.filePath)
+                if (!sourceFile.exists()) {
+                    return@withContext false
+                }
+
+                val fileName = sourceFile.name
+                val extension = sourceFile.extension.lowercase(Locale.getDefault())
+                val mimeType = when (extension) {
+                    "m4a" -> "audio/mp4"
+                    "mp3" -> "audio/mpeg"
+                    "wav" -> "audio/wav"
+                    else -> "audio/*"
+                }
+
+                // Android 10(Q) 이상: MediaStore 사용
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    val values = ContentValues().apply {
+                        put(MediaStore.Audio.Media.DISPLAY_NAME, fileName)
+                        put(MediaStore.Audio.Media.MIME_TYPE, mimeType)
+                        // 공개 Music/krdondon_mic 폴더
+                        put(
+                            MediaStore.Audio.Media.RELATIVE_PATH,
+                            Environment.DIRECTORY_MUSIC + "/krdondon_mic"
+                        )
+                        put(MediaStore.Audio.Media.IS_PENDING, 1)
+                    }
+
+                    val resolver = context.contentResolver
+                    val collection = MediaStore.Audio.Media.getContentUri(
+                        MediaStore.VOLUME_EXTERNAL_PRIMARY
+                    )
+
+                    val uri = resolver.insert(collection, values)
+                    if (uri != null) {
+                        resolver.openOutputStream(uri)?.use { out ->
+                            sourceFile.inputStream().use { input ->
+                                input.copyTo(out)
+                            }
+                        }
+                        // 복사 완료 표시
+                        values.clear()
+                        values.put(MediaStore.Audio.Media.IS_PENDING, 0)
+                        resolver.update(uri, values, null, null)
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    // Android 9(P) 이하: 기존 방식으로 Music 폴더에 복사
+                    val musicDir =
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC)
+                    val outDir = File(musicDir, "krdondon_mic")
+                    if (!outDir.exists()) {
+                        outDir.mkdirs()
+                    }
+                    val targetFile = File(outDir, fileName)
+                    sourceFile.copyTo(targetFile, overwrite = true)
+                    true
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+        }
+
 
     private fun saveSinglePart(
         tempFile: File,

@@ -420,7 +420,24 @@ fun RecordingItem(
                     Text("이름 변경")
                 }
 
+                // 2) Music 폴더로 내보내기
+                TextButton(
+                    onClick = {
+                        showOptionsDialog = false
+                        viewModel.exportRecordingToMusic(recording)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        Icons.Default.Share,
+                        contentDescription = "내보내기"
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Music 폴더로 내보내기")
+                }
+
                 Spacer(modifier = Modifier.height(8.dp))
+
 
                 // 2) 휴지통으로 이동
                 TextButton(
