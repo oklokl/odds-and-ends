@@ -5,8 +5,6 @@ import android.content.ContentValues
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Matrix
-import android.media.ExifInterface
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -45,7 +43,6 @@ import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStream
 import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.*
@@ -86,7 +83,6 @@ fun RatioApp() {
     var selectedBackgroundColor by remember { mutableStateOf(BackgroundColor.WHITE) }
     var quality by remember { mutableStateOf(100) }
     var showQualityDialog by remember { mutableStateOf(false) }
-    var currentRotation by remember { mutableStateOf(0f) }
 
     val aspectRatios = remember {
         listOf(
@@ -116,33 +112,12 @@ fun RatioApp() {
         uri?.let {
             selectedImageUri = it
             try {
-                // EXIF 오리엔테이션을 고려한 이미지 로드
-                originalBitmap = loadBitmapWithOrientation(context, it)
+                val inputStream = context.contentResolver.openInputStream(it)
+                originalBitmap = BitmapFactory.decodeStream(inputStream)
                 editedBitmap = null
                 selectedRatio = null
-                currentRotation = 0f // 회전 초기화
             } catch (e: Exception) {
-                Toast.makeText(context, "이미지를 불러올 수 없습니다: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    // 90도 회전 함수
-    fun rotateImage() {
-        originalBitmap?.let { bitmap ->
-            currentRotation = (currentRotation + 90f) % 360f
-            val matrix = Matrix().apply {
-                postRotate(90f)
-            }
-            originalBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-
-            // 비율이 선택된 경우 다시 적용
-            if (selectedRatio != null) {
-                editedBitmap = resizeToAspectRatio(
-                    originalBitmap!!,
-                    selectedRatio!!.ratio,
-                    selectedBackgroundColor.colorValue
-                )
+                Toast.makeText(context, "이미지를 불러올 수 없습니다", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -214,31 +189,8 @@ fun RatioApp() {
                 )
             }
 
-            // 이미지가 로드되었을 때만 편집 옵션 표시
+            // 비율 선택
             if (originalBitmap != null) {
-                // 90도 회전 버튼
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedButton(
-                    onClick = { rotateImage() },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Icon(
-                        Icons.Default.Refresh,
-                        contentDescription = "90도 회전",
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("90도 회전")
-                    if (currentRotation > 0) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("(${currentRotation.toInt()}°)", color = MaterialTheme.colorScheme.secondary)
-                    }
-                }
-
-                // 비율 선택
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     "비율 선택",
@@ -468,58 +420,6 @@ fun QualityDialog(
     )
 }
 
-// EXIF 오리엔테이션을 고려한 이미지 로드 함수
-fun loadBitmapWithOrientation(context: android.content.Context, uri: Uri): Bitmap {
-    // 먼저 이미지를 디코드
-    val inputStream = context.contentResolver.openInputStream(uri)
-    val bitmap = BitmapFactory.decodeStream(inputStream)
-    inputStream?.close()
-
-    // EXIF 정보에서 회전 각도 가져오기
-    val rotation = getOrientationFromExif(context, uri)
-
-    // 회전이 필요한 경우 회전된 비트맵 반환
-    return if (rotation != 0f) {
-        val matrix = Matrix().apply {
-            postRotate(rotation)
-        }
-        Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-    } else {
-        bitmap
-    }
-}
-
-// EXIF 오리엔테이션 정보 가져오기
-fun getOrientationFromExif(context: android.content.Context, uri: Uri): Float {
-    return try {
-        val inputStream = context.contentResolver.openInputStream(uri)
-        inputStream?.use { stream ->
-            val exif = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                ExifInterface(stream)
-            } else {
-                // API 24 미만의 경우 파일 경로로 처리
-                val tempFile = File.createTempFile("temp", "jpg", context.cacheDir)
-                tempFile.outputStream().use { output ->
-                    stream.copyTo(output)
-                }
-                val exifInterface = ExifInterface(tempFile.absolutePath)
-                tempFile.delete()
-                exifInterface
-            }
-
-            when (exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
-                ExifInterface.ORIENTATION_ROTATE_90 -> 90f
-                ExifInterface.ORIENTATION_ROTATE_180 -> 180f
-                ExifInterface.ORIENTATION_ROTATE_270 -> 270f
-                else -> 0f
-            }
-        } ?: 0f
-    } catch (e: Exception) {
-        // EXIF 정보를 읽을 수 없는 경우 회전하지 않음
-        0f
-    }
-}
-
 // 수정된 resizeToAspectRatio 함수
 fun resizeToAspectRatio(bitmap: Bitmap, targetRatio: Float, backgroundColor: Int = android.graphics.Color.WHITE): Bitmap {
     val originalWidth = bitmap.width
@@ -709,15 +609,8 @@ fun getImprovedFileNameFromUri(context: android.content.Context, uri: Uri?): Str
     }
 }
 
-// InputStream 복사 확장 함수
-fun InputStream.copyTo(out: OutputStream, bufferSize: Int = DEFAULT_BUFFER_SIZE): Long {
-    var bytesCopied: Long = 0
-    val buffer = ByteArray(bufferSize)
-    var bytes = read(buffer)
-    while (bytes >= 0) {
-        out.write(buffer, 0, bytes)
-        bytesCopied += bytes
-        bytes = read(buffer)
-    }
-    return bytesCopied
+// 기존 함수는 제거하거나 deprecated로 표시
+@Deprecated("Use getImprovedFileNameFromUri instead")
+fun getFileNameFromUri(context: android.content.Context, uri: Uri?): String? {
+    return getImprovedFileNameFromUri(context, uri)
 }
