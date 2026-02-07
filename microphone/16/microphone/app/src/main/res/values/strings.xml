@@ -1,0 +1,85 @@
+<resources>
+    <string name="app_name">상단 마이크</string>
+    
+    <!-- 메인 화면 -->
+    <string name="all_recordings">모든 녹음 파일</string>
+    <string name="recording_count">녹음 파일 %d개</string>
+    <string name="voice">음성</string>
+    <string name="recordings">음성 녹음</string>
+    <string name="trash">휴지통</string>
+    <string name="category_management">카테고리 미지정</string>
+    <string name="category_manage">카테고리 관리</string>
+    
+    <!-- 녹음 -->
+    <string name="recording">일반</string>
+    <string name="recording_in_progress">녹음 중</string>
+    <string name="save_recording">녹음 파일 저장</string>
+    <string name="file_name">파일 이름</string>
+    <string name="category">카테고리</string>
+    <string name="cancel">취소</string>
+    <string name="save">저장</string>
+    
+    <!-- 설정 -->
+    <string name="settings">음성 녹음 설정</string>
+    <string name="recording_quality">녹음 음질</string>
+    <string name="quality_high">고음질 256kbps, 48kHz</string>
+    <string name="quality_medium">중간 128kbps, 48kHz</string>
+    <string name="quality_low">저음질 64kbps, 48kHz</string>
+    <string name="stereo_recording">스테레오로 녹음</string>
+    <string name="block_calls_while_recording">녹음 중 전화 차단</string>
+    <string name="auto_play_next">다음 녹음 자동재생</string>
+    <string name="storage_location">저장위치</string>
+    <string name="internal_storage">내장 저장공간</string>
+    <string name="sd_card">SD 카드</string>
+    <string name="otg">OTG</string>
+    <string name="microphone_position">마이크 녹음 위치</string>
+    <string name="top_mic">상단</string>
+    <string name="bottom_mic">하단</string>
+    <string name="audio_format">오디오 재생</string>
+    <string name="format_m4a">M4A 확장자</string>
+    <string name="format_mp3">MP3 확장자</string>
+    <string name="use_bluetooth_mic">사용 가능할 때 블루투스 마이크 사용</string>
+    <string name="privacy_policy">개인정보 처리방침</string>
+    <string name="app_permissions">이 앱이 사용하는 권한</string>
+    
+    <!-- 권한 -->
+    <string name="permission_microphone">마이크 권한</string>
+    <string name="permission_microphone_desc">음성 녹음을 위해 마이크 권한이 필요합니다.</string>
+    <string name="permission_storage">저장소 권한</string>
+    <string name="permission_storage_desc">녹음 파일 저장을 위해 저장소 권한이 필요합니다.</string>
+    <string name="permission_notification">알림 권한</string>
+    <string name="permission_notification_desc">녹음/재생 상태를 알림바에 표시하기 위해 알림 권한이 필요합니다.</string>
+    <string name="permission_phone">전화 권한</string>
+    <string name="permission_phone_desc">녹음 중 전화 차단 기능을 위해 전화 상태 권한이 필요합니다.</string>
+    <string name="permission_bluetooth">블루투스 권한</string>
+    <string name="permission_bluetooth_desc">블루투스 마이크 사용을 위해 블루투스 권한이 필요합니다.</string>
+    
+    <!-- 알림 -->
+    <string name="notification_channel_recording">녹음 알림</string>
+    <string name="notification_channel_playback">재생 알림</string>
+    <string name="notification_recording_title">녹음 중</string>
+    <string name="notification_recording_text">녹음이 진행 중입니다.</string>
+    <string name="notification_playback_title">재생 중</string>
+    <string name="notification_playback_text">%s 재생 중</string>
+    
+    <!-- 버튼 -->
+    <string name="record">녹음</string>
+    <string name="pause">일시정지</string>
+    <string name="resume">계속</string>
+    <string name="stop">정지</string>
+    <string name="play">재생</string>
+    <string name="delete">삭제</string>
+    <string name="rename">이름 변경</string>
+    <string name="move_to_folder">폴더 이동</string>
+    <string name="share">공유</string>
+    
+    <!-- 메시지 -->
+    <string name="recording_saved">녹음이 저장되었습니다.</string>
+    <string name="file_deleted">파일이 삭제되었습니다.</string>
+    <string name="file_renamed">파일 이름이 변경되었습니다.</string>
+    <string name="category_created">카테고리가 생성되었습니다.</string>
+    <string name="category_deleted">카테고리가 삭제되었습니다.</string>
+    <string name="error_permission">권한이 필요합니다.</string>
+    <string name="error_recording">녹음 중 오류가 발생했습니다.</string>
+    <string name="error_playback">재생 중 오류가 발생했습니다.</string>
+</resources>
