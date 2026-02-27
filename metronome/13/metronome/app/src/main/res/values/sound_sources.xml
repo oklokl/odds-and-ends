@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- 사운드 효과 출처 리스트
+         나중에 이 배열에 <item>만 추가하시면 됩니다. -->
+    <string-array name="sound_effect_sources">
+        <item>ZapSplat.com</item>
+        <item>pixabay.com</item>
+        <item>esffects.net</item>
+        <item>taira-komori.net</item>
+        <!-- 예시: 나중에 이렇게 추가 -->
+        <!-- <item>test.com</item> -->
+        <!-- <item>example2.com</item> -->
+    </string-array>
+
+</resources>
