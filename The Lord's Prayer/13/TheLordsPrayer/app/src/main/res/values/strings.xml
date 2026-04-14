@@ -1,0 +1,10 @@
+<!-- res/values/strings.xml 예시 -->
+<resources>
+    <string name="app_name">주기도문</string>
+    <string name="notification_channel_name">음악 재생 서비스</string>
+    <string name="notification_title">주님의 기도</string>
+    <string name="notification_text">재생 중</string>
+    <string name="notification_play_action">재생</string>
+    <string name="notification_pause_action">일시정지</string>
+    <string name="notification_stop_action">정지</string>
+</resources>
