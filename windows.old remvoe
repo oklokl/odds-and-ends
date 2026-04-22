@@ -1,0 +1,6 @@
+echo C:\ windows.old 업데이트 이후 남는 폴더 삭제 방법 cmd를 관리자 권한으로 하시고요 아래 명령어를 복사 해서 마우스 우클릭 붙쳐 넣기 하세요 순서대로 좀 시간이 걸릴수 있어요
+
+takeown /f "C:\Windows.old" /r /d y
+icacls "C:\Windows.old" /grant administrators:F /t /c
+attrib -h -r -s "C:\Windows.old" /s /d
+rd /s /q "C:\Windows.old"
