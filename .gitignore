@@ -14,3 +14,4 @@ captures/
 Thumbs.db
 # Logs
 *.log
+*.dm
