@@ -2,16 +2,27 @@
 .idea/
 .gradle/
 local.properties
+**/local.properties
 build/
+**/build/
 captures/
+.externalNativeBuild/
+.cxx/
 *.iml
+
+# 키 / 서명 파일
+*.key
 *.keystore
 *.jks
+
+# 빌드 산출물
 *.apk
 *.aab
+
 # OS
 .DS_Store
 Thumbs.db
+
 # Logs
 *.log
 *.dm
