@@ -1,0 +1,12 @@
+﻿--------- beginning of system
+02-19 11:58:47.213   715   962 I ActivityTaskManager: START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10200000 xflg=0x4 cmp=com.krdonon.timer/.MainActivity bnds=[824,1897][997,2092]} with LAUNCH_SINGLE_TOP from uid 10182 (sr=230041816) (BAL_ALLOW_VISIBLE_WINDOW) result code=2
+02-19 11:58:52.943   715   946 I ActivityManager: Background started FGS: Allowed [callingPackage: com.krdonon.timer; callingUid: 10221; uidState: TOP ; uidBFSL: [BFSL]; intent: Intent { act=com.krdonon.timer.action.START_TIMER xflg=0x4 cmp=com.krdonon.timer/.ClockService (has extras) }; code:PROC_STATE_TOP; tempAllowListReason:<,reasonCode:SYSTEM_ALLOW_LISTED,duration:9223372036854775807,callingUid:-1>; allowWiu:12; targetSdkVersion:36; callerTargetSdkVersion:36; startForegroundCount:0; bindFromPackage:null: isBindService:false]
+02-19 11:58:53.936   715   746 I ActivityManager: updateOomAdj start time is before than pendingPid added, don't delete it
+02-19 11:59:02.972   715   946 I ActivityManager: Background started FGS: Allowed [callingPackage: com.krdonon.timer; callingUid: 10221; uidState: FGS ; uidBFSL: [BFSL]; intent: Intent { act=com.krdonon.timer.alarm.ACTION_START xflg=0x4 cmp=com.krdonon.timer/.alarm.AlarmService (has extras) }; code:PROC_STATE_FGS; tempAllowListReason:<,reasonCode:SYSTEM_ALLOW_LISTED,duration:9223372036854775807,callingUid:-1>; allowWiu:-1; targetSdkVersion:36; callerTargetSdkVersion:36; startForegroundCount:0; bindFromPackage:null: isBindService:false]
+02-19 11:59:02.985   715  1965 W ActivityManager: Foreground service started from background can not have location/camera/microphone access: service com.krdonon.timer/.alarm.AlarmService
+02-19 11:59:05.986   715   715 I ActivityManager: updateOomAdj start time is before than pendingPid added, don't delete it
+02-19 11:59:08.508   715  1198 I ActivityTaskManager: START u0 {flg=0x30000000 xflg=0x4 cmp=com.krdonon.timer/.alarm.AlarmActivity (has extras)} with LAUNCH_SINGLE_TASK from uid 10221 (realCallingUid=10187) (BAL_ALLOW_NON_APP_VISIBLE_WINDOW [realCaller]) result code=0
+02-19 11:59:08.573   715  2038 I ActivityTaskManager: Activity requesting to dismiss Keyguard: ActivityRecord{210321391 u0 com.krdonon.timer/.alarm.AlarmActivity t90}
+--------- beginning of main
+02-19 11:59:08.686   715   743 I ActivityTaskManager: Displayed com.krdonon.timer/.alarm.AlarmActivity for user 0: +183ms
+02-19 11:59:10.241   715  1197 W ActivityTaskManager: callingPackage for (uid=-1, pid=-1) has no WPC
