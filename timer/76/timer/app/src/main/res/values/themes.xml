@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme -->
+    <style name="Theme.Timer" parent="Theme.Material3.DayNight.NoActionBar">
+
+        <!-- Primary color -->
+        <item name="colorPrimary">@color/purple_500</item>
+        <item name="colorOnPrimary">@color/white</item>
+
+        <!-- Secondary color -->
+        <item name="colorSecondary">@color/teal_700</item>
+        <item name="colorOnSecondary">@color/white</item>
+
+        <!-- Background / Surface colors -->
+        <item name="android:colorBackground">@color/white</item>
+        <item name="colorSurface">@color/white</item>
+        <item name="colorOnSurface">@color/black</item>
+
+        <!-- Status bar color -->
+        <item name="android:statusBarColor">@color/purple_700</item>
+        <item name="android:windowLightStatusBar">false</item>
+
+        <!-- Navigation bar: 배경 진하게 -->
+        <item name="android:navigationBarColor">@android:color/black</item>
+
+        <!-- 주의: android:windowLightNavigationBar 는 API 27+ 이므로 values/themes.xml에 두면 minSdk 26에서 에러 발생 -->
+        <!-- <item name="android:windowLightNavigationBar">false</item> -->
+
+    </style>
+</resources>
