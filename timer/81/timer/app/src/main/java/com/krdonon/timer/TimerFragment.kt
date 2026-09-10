@@ -1,0 +1,1503 @@
+package com.krdonon.timer
+
+import android.app.AlarmManager
+import android.app.KeyguardManager
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.Context
+import androidx.core.content.ContextCompat
+import android.content.Intent
+import android.content.IntentFilter
+import android.net.Uri
+import android.os.Build
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
+import android.text.InputType
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.core.widget.NestedScrollView
+import android.widget.Button
+import android.widget.EditText
+import android.widget.HorizontalScrollView
+import android.widget.LinearLayout
+import android.widget.NumberPicker
+import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.commit
+import androidx.lifecycle.ViewModelProvider
+import com.krdonon.timer.alarm.AlarmReceiver
+import com.krdonon.timer.alarm.AlarmService
+import com.krdonon.timer.alarm.TimerAlarmPrefs
+import com.krdonon.timer.databinding.FragmentTimerBinding
+import android.provider.DocumentsContract
+import kotlin.concurrent.thread
+import java.util.Calendar
+import java.util.Locale
+import java.util.concurrent.TimeUnit
+import kotlin.math.abs
+import kotlin.math.max
+import org.json.JSONArray
+import org.json.JSONObject
+
+class TimerFragment : Fragment() {
+
+    private var _binding: FragmentTimerBinding? = null
+    private val binding get() = _binding!!
+
+    private lateinit var timerScrollView: NestedScrollView
+
+    private lateinit var timerText: TextView
+    private lateinit var currentTimeText: TextView
+    private lateinit var nextTimeText: TextView
+    private lateinit var extraSummaryText: TextView
+    private lateinit var btnStart: Button
+    private lateinit var btnReset: Button
+    private lateinit var btnAdd: Button
+    private lateinit var presetScrollView: HorizontalScrollView
+    private lateinit var presetContainer: LinearLayout
+
+    private lateinit var btn5: Button
+    private lateinit var btn10: Button
+    private lateinit var btn15: Button
+    private lateinit var btn30: Button
+    private lateinit var btn40: Button
+    private lateinit var btn50: Button
+    private lateinit var btnLog: Button
+    private lateinit var btnAlertMode: Button
+    private lateinit var btnPickTimerSound: Button
+    private lateinit var btnTimerRingDuration: Button
+    private lateinit var timerSoundNameText: TextView
+    private lateinit var extraTimersContainer: LinearLayout
+
+    // ====== Timer: mp3 선택(Activity Result) ======
+    private val pickTimerSoundLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val data = result.data
+            val uri: Uri? = data?.data
+            if (uri != null) {
+                // 1) Persist permission when possible (SAF)
+                TimerAlarmPrefs.persistReadPermission(requireContext(), uri, data.flags)
+
+                // 2) Always copy to app-private storage as fallback (works even if persist fails)
+                val appCtx = requireContext().applicationContext
+                thread {
+                    val name = TimerAlarmPrefs.resolveDisplayName(appCtx, uri)
+                    val localPath = TimerAlarmPrefs.copyToInternalStorage(appCtx, uri, name)
+                    TimerAlarmPrefs.setCustom(appCtx, uri, name, localPath)
+                    handler.post {
+                        updateTimerSoundLabel()
+                        Toast.makeText(requireContext(), "타이머 소리 설정됨", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
+
+    private val handler = Handler(Looper.getMainLooper())
+    private var ticker: Runnable? = null
+
+    private var timeLeftInMillis: Long = 0L
+    // 메인 타이머 표시는 ELAPSED_REALTIME 기반 프레임 타이커만 사용한다.
+    // 복원/동기화 시 CountDownTimer 와 혼용되면 분 경계에서 숫자가 흔들릴 수 있다.
+    private var running = false
+
+    private var mainEndElapsed: Long = 0L
+    private var pendingMainTargetAtMs: Long? = null
+
+    private lateinit var viewModel: TimerViewModel
+
+    // 🔹 보조 타이머의 종료 시각을 저장
+    private val extraTimerEndTimes = mutableMapOf<String, Long>()
+
+    // ✅ 무한 루프 방지: 브로드캐스트 처리 중 플래그
+    private var isProcessingBroadcast = false
+    private data class PendingBroadcastState(
+        val state: String,
+        val remain: Long,
+        val endElapsed: Long,
+        val sessionId: Long
+    )
+    private var pendingProcessingBroadcast: PendingBroadcastState? = null
+
+    // 🔹 상태 동기화 강화: 마지막 처리한 상태 기록
+    private var lastProcessedState = ""
+    private var lastProcessedTime = 0L
+    private var lastTerminalStateAt = 0L
+    private var currentTimerSessionId = 0L
+    private var terminalSessionId = 0L
+
+    // ====== ClockService ↔ Fragment 동기화용 브로드캐스트 ======
+    private val ACTION_TIMER_STATE = "com.krdonon.timer.action.TIMER_STATE"
+    private val EXTRA_STATE = "state"
+    private val EXTRA_REMAIN_MS = "remain_ms"
+    private val EXTRA_END_ELAPSED = "end_elapsed"
+    private val EXTRA_SESSION_ID = "session_id"
+    private val PERSIST_PREFS = "clock_persist_prefs"
+    private val KEY_TIMER_END_WALL = "timer_end_wall"
+    private val KEY_TIMER_SESSION_ID = "timer_session_id"
+    private val SYNC_PREFS = "clock_sync_prefs"
+    private val KEY_LAST_SYNC_STATE = "key_state"
+    private val KEY_LAST_SYNC_REMAIN = "key_remain_ms"
+    private val KEY_LAST_SYNC_SESSION_ID = "key_session_id"
+    private val STATE_RUNNING = "RUNNING"
+    private val STATE_PAUSED  = "PAUSED"
+    private val STATE_STOPPED = "STOPPED"
+    private val STATE_FINISHED = "FINISHED"
+
+    private var isReceiverRegistered = false
+
+    // 🔹 브로드캐스트 처리 디바운싱
+    private val broadcastDebouncer = Handler(Looper.getMainLooper())
+    private var pendingBroadcastRunnable: Runnable? = null
+
+    // 서비스 상태 수신
+    private val timerStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action != ACTION_TIMER_STATE) return
+
+            val state = intent.getStringExtra(EXTRA_STATE) ?: return
+            val remain = intent.getLongExtra(EXTRA_REMAIN_MS, 0L).coerceAtLeast(0L)
+            val endElapsed = intent.getLongExtra(EXTRA_END_ELAPSED, 0L)
+            val sessionId = intent.getLongExtra(EXTRA_SESSION_ID, 0L)
+
+            if (state != STATE_RUNNING) {
+                AppLog.d(requireContext(), "TimerFragment", "broadcast received state=$state remain=$remain endElapsed=$endElapsed session=$sessionId")
+            }
+
+            // 🔹 이전과 같은 상태가 100ms 이내에 왔으면 무시
+            val now = System.currentTimeMillis()
+            if (state == STATE_RUNNING && sessionId > 0L && terminalSessionId > 0L && sessionId == terminalSessionId) {
+                AppLog.d(requireContext(), "TimerFragment", "ignored stale RUNNING for terminal session=$sessionId")
+                return
+            }
+            if (state == STATE_RUNNING && now - lastTerminalStateAt < 3000L) {
+                AppLog.d(requireContext(), "TimerFragment", "ignored stale RUNNING after terminal state")
+                return
+            }
+            if (state == STATE_FINISHED || state == STATE_STOPPED) {
+                lastTerminalStateAt = now
+                if (sessionId > 0L) terminalSessionId = sessionId
+                pendingBroadcastRunnable?.let { broadcastDebouncer.removeCallbacks(it) }
+            }
+            if (state == lastProcessedState && (now - lastProcessedTime) < 100) {
+                AppLog.dThrottled(requireContext(), "TimerFragment", "skip_duplicate_$state", 5000L,
+                    "skip duplicate broadcast state=$state")
+                return
+            }
+
+            // 🔹 디바운싱: 이전 처리 취소하고 새로운 처리 예약
+            pendingBroadcastRunnable?.let { broadcastDebouncer.removeCallbacks(it) }
+
+            pendingBroadcastRunnable = Runnable {
+                processBroadcastState(state, remain, endElapsed, sessionId)
+                lastProcessedState = state
+                lastProcessedTime = System.currentTimeMillis()
+            }
+
+            // 🔹 50ms 지연 후 처리 (연속된 브로드캐스트 그룹핑)
+            broadcastDebouncer.postDelayed(pendingBroadcastRunnable!!, 50)
+        }
+    }
+
+    private fun currentSyncSessionId(): Long {
+        return runCatching {
+            requireContext().getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
+                .getLong(KEY_LAST_SYNC_SESSION_ID, 0L)
+        }.getOrDefault(0L)
+    }
+
+    private fun currentSyncState(): String? {
+        return runCatching {
+            requireContext().getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
+                .getString(KEY_LAST_SYNC_STATE, null)
+        }.getOrNull()
+    }
+
+    private fun shouldIgnoreRunningBroadcast(remain: Long, sessionId: Long, endElapsed: Long): Boolean {
+        val syncState = currentSyncState()
+        val syncSessionId = currentSyncSessionId()
+        if (sessionId > 0L && terminalSessionId > 0L && sessionId == terminalSessionId) {
+            AppLog.d(requireContext(), "TimerFragment", "ignore RUNNING because terminal session matched session=$sessionId remain=$remain")
+            return true
+        }
+        if (syncState == STATE_FINISHED || syncState == STATE_STOPPED) {
+            val shouldIgnoreBySync = when {
+                sessionId <= 0L -> syncSessionId == 0L
+                syncSessionId <= 0L -> false
+                else -> sessionId <= syncSessionId
+            }
+            if (shouldIgnoreBySync) {
+                AppLog.d(requireContext(), "TimerFragment", "ignore RUNNING because sync state is terminal=$syncState session=$sessionId remain=$remain")
+                return true
+            }
+        }
+        if (currentTimerSessionId > 0L && sessionId > 0L && sessionId < currentTimerSessionId) {
+            AppLog.d(requireContext(), "TimerFragment", "ignore RUNNING from older session=$sessionId current=$currentTimerSessionId")
+            return true
+        }
+        if (terminalSessionId > 0L && sessionId > 0L && sessionId < terminalSessionId) {
+            AppLog.d(requireContext(), "TimerFragment", "ignore RUNNING older than terminal session=$sessionId terminal=$terminalSessionId")
+            return true
+        }
+        val now = System.currentTimeMillis()
+        if (now - lastTerminalStateAt < 3000L) {
+            val olderOrUnknownSession = when {
+                sessionId <= 0L -> true
+                terminalSessionId > 0L -> sessionId <= terminalSessionId
+                currentTimerSessionId > 0L -> sessionId <= currentTimerSessionId
+                else -> false
+            }
+            if (olderOrUnknownSession) {
+                AppLog.d(requireContext(), "TimerFragment", "ignore RUNNING because terminal state was received recently remain=$remain session=$sessionId")
+                return true
+            }
+        }
+        return false
+    }
+
+    // 🔹 실제 브로드캐스트 상태 처리
+    private fun processBroadcastState(state: String, remain: Long, endElapsed: Long, sessionId: Long) {
+        if (isProcessingBroadcast) {
+            pendingProcessingBroadcast = PendingBroadcastState(state, remain, endElapsed, sessionId)
+            AppLog.dThrottled(requireContext(), "TimerFragment", "broadcast_busy", 5000L,
+                "already processing broadcast, keep latest state=$state session=$sessionId")
+            return
+        }
+
+        isProcessingBroadcast = true
+
+        if (state == STATE_RUNNING) {
+            AppLog.dProgress(
+                requireContext(),
+                "TimerFragment",
+                "process_running",
+                sessionId,
+                remain,
+                bucketSec = 15,
+                finalCountdownSec = 5,
+                message = "process broadcast state=$state remain=$remain session=$sessionId"
+            )
+        } else {
+            AppLog.d(requireContext(), "TimerFragment", "process broadcast state=$state remain=$remain session=$sessionId")
+        }
+
+        try {
+            when (state) {
+                STATE_PAUSED -> {
+                    handler.post {
+                        if (sessionId > 0L) currentTimerSessionId = sessionId
+                        stopMainTicker()
+                        running = false
+                        mainEndElapsed = 0L
+                        timeLeftInMillis = remain
+                        btnStart.text = getString(R.string.btn_start)
+                        updateMainTimerUI()
+                        cancelExactAlarm()
+                        viewModel.setMain(null, false)
+                    }
+                }
+                STATE_RUNNING -> {
+                    if (shouldIgnoreRunningBroadcast(remain, sessionId, endElapsed)) {
+                        return
+                    }
+                    handler.post {
+                        if (shouldIgnoreRunningBroadcast(remain, sessionId, endElapsed)) {
+                            return@post
+                        }
+                        stopMainTicker()
+                        val nowElapsed = SystemClock.elapsedRealtime()
+                        val newEnd = if (endElapsed > 0L) endElapsed else (nowElapsed + remain)
+                        val persistedEndAtWall = persistedTimerEndWall(sessionId)
+                        val computedRemainFromWall = if (persistedEndAtWall > 0L) {
+                            (persistedEndAtWall - System.currentTimeMillis()).coerceAtLeast(0L)
+                        } else {
+                            (newEnd - nowElapsed).coerceAtLeast(0L)
+                        }
+                        val newRemain = computedRemainFromWall
+
+                        if (sessionId > 0L) {
+                            currentTimerSessionId = sessionId
+                            if (terminalSessionId != sessionId) terminalSessionId = 0L
+                        }
+
+                        val needRestart = !running || mainEndElapsed == 0L || abs(timeLeftInMillis - newRemain) > 2000
+                        mainEndElapsed = nowElapsed + newRemain
+                        running = true
+                        timeLeftInMillis = newRemain
+                        btnStart.text = getString(R.string.btn_pause)
+
+                        if (persistedEndAtWall > 0L) {
+                            pendingMainTargetAtMs = persistedEndAtWall
+                        }
+
+                        if (needRestart) {
+                            val endAtWall = if (persistedEndAtWall > 0L) persistedEndAtWall else (System.currentTimeMillis() + newRemain)
+                            scheduleExactAlarm(endAtWall, "메인 타이머")
+                            viewModel.setMain(endAtWall, true)
+                        }
+
+                        startMainTicker()
+                    }
+                }
+                STATE_STOPPED, STATE_FINISHED -> {
+                    handler.post {
+                        if (sessionId > 0L) {
+                            terminalSessionId = sessionId
+                            if (currentTimerSessionId == sessionId) currentTimerSessionId = 0L
+                        }
+                        resetMainUIOnly()
+                    }
+                }
+            }
+        } finally {
+            isProcessingBroadcast = false
+            val pending = pendingProcessingBroadcast
+            pendingProcessingBroadcast = null
+            if (pending != null &&
+                (pending.state != state || pending.remain != remain || pending.endElapsed != endElapsed || pending.sessionId != sessionId)
+            ) {
+                handler.post {
+                    processBroadcastState(
+                        pending.state,
+                        pending.remain,
+                        pending.endElapsed,
+                        pending.sessionId
+                    )
+                }
+            }
+        }
+    }
+
+    // ====== 정확 알람 ======
+    private val alarmRequestCode = 10011
+
+    private fun alarmPendingIntent(
+        label: String = "메인 타이머",
+        endAtMillis: Long = -1L,
+    ): PendingIntent {
+        val intent = Intent(requireContext(), AlarmReceiver::class.java).apply {
+            putExtra(AlarmService.EXTRA_LABEL, label)
+            // ✅ 실기기(Doze/잠금)에서 CountDownTimer가 멈추면 알람만 울리고
+            // ClockService/알림(RemoteViews Chronometer)은 종료 처리를 못 해 음수로 흘러갈 수 있음.
+            // 알람 인텐트에 종료 시각을 실어 보내면, 수신 측에서 "정확히 이 타이머"만 종료 처리할 수 있다.
+            putExtra(ClockService.EXTRA_TIMER_END_AT_WALL, endAtMillis)
+        }
+        return PendingIntent.getBroadcast(
+            requireContext(),
+            alarmRequestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun scheduleExactAlarm(triggerAtMillis: Long, label: String = "메인 타이머") {
+        val am = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val pi = alarmPendingIntent(label, triggerAtMillis)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (am.canScheduleExactAlarms())
+                    am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
+                else am.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
+            } else {
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
+            }
+            AppLog.d(requireContext(), "TimerFragment", "exact alarm scheduled at=$triggerAtMillis")
+        } catch (e: SecurityException) {
+            am.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
+        }
+    }
+
+    private fun cancelExactAlarm() {
+        val am = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val pi = alarmPendingIntent()
+        runCatching {
+            am.cancel(pi)
+            pi.cancel()
+            AppLog.d(requireContext(), "TimerFragment", "exact alarm cancelled")
+        }
+    }
+
+    private fun updateTimerSoundLabel() {
+        // alarm 메뉴의 표기 방식과 유사하게: "사용자: xxx.mp3" / "기본: alarm_sound.mp3"
+        val name = TimerAlarmPrefs.getCustomName(requireContext())
+        timerSoundNameText.text = if (name.isNullOrBlank()) {
+            "기본: alarm_sound.mp3"
+        } else {
+            "사용자: $name"
+        }
+    }
+
+    // ====== 생명주기 ======
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        _binding = FragmentTimerBinding.inflate(inflater, container, false)
+        val v = binding.root
+
+        viewModel = ViewModelProvider(requireActivity())[TimerViewModel::class.java]
+
+        timerScrollView = binding.timerScrollView
+
+        timerText = binding.timerText
+        currentTimeText = binding.currentTimeText
+        nextTimeText = binding.nextTimeText
+        extraSummaryText = binding.extraSummaryText
+        btnStart = binding.btnStartTimer
+        btnReset = binding.btnResetTimer
+        btnAdd   = binding.btnAddTimer
+
+        presetScrollView = binding.presetScrollView
+        presetContainer  = binding.presetContainer
+        btn5  = binding.btnPreset5
+        btn10 = binding.btnPreset10
+        btn15 = binding.btnPreset15
+        btn30 = binding.btnPreset30
+        btn40 = binding.btnPreset40
+        btn50 = binding.btnPreset50
+
+        extraTimersContainer = binding.extraTimersContainer
+
+        timerSoundNameText = binding.timerSoundNameText
+        btnLog = binding.btnLog
+
+        // 프리셋 버튼 라벨(표시용): 00:10:00 -> 10분
+        // ※ 텍스트 자동 크기 조절은 layout(fragment_timer.xml)의 autoSize 속성으로 처리
+        btn5.text  = formatPresetLabel(TimeUnit.MINUTES.toMillis(5))
+        btn10.text = formatPresetLabel(TimeUnit.MINUTES.toMillis(10))
+        btn15.text = formatPresetLabel(TimeUnit.MINUTES.toMillis(15))
+        btn30.text = formatPresetLabel(TimeUnit.MINUTES.toMillis(30))
+        btn40.text = formatPresetLabel(TimeUnit.MINUTES.toMillis(40))
+        btn50.text = formatPresetLabel(TimeUnit.MINUTES.toMillis(50))
+
+        setupPresetSlider()
+
+        // 알림모드 토글
+        btnAlertMode = binding.btnAlertMode
+        btnPickTimerSound = binding.btnPickTimerSound
+        btnTimerRingDuration = binding.btnTimerRingDuration
+        updateTimerSoundLabel()
+        val alarmPrefs = requireContext().getSharedPreferences(AlarmService.PREFS, Context.MODE_PRIVATE)
+        var currentMode = alarmPrefs.getString(AlarmService.KEY_ALERT_MODE, AlarmService.MODE_SOUND)
+            ?: AlarmService.MODE_SOUND
+        fun updateAlertModeButton() { btnAlertMode.text = if (currentMode == AlarmService.MODE_VIBRATE) "진동" else "소리" }
+        updateAlertModeButton()
+        btnAlertMode.setOnClickListener {
+            currentMode = if (currentMode == AlarmService.MODE_VIBRATE) AlarmService.MODE_SOUND else AlarmService.MODE_VIBRATE
+            alarmPrefs.edit().putString(AlarmService.KEY_ALERT_MODE, currentMode).apply()
+            updateAlertModeButton()
+        }
+
+        // ====== 타이머 mp3 선택(알림 메뉴와 분리) ======
+        fun launchTimerSoundPicker() {
+            val initialUri = runCatching {
+                Uri.parse("content://com.android.externalstorage.documents/document/primary:Download")
+            }.getOrNull()
+
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "audio/*"
+                putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("audio/mpeg", "audio/mp3", "audio/*"))
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+                if (initialUri != null) {
+                    putExtra(DocumentsContract.EXTRA_INITIAL_URI, initialUri)
+                }
+            }
+            pickTimerSoundLauncher.launch(intent)
+        }
+
+        btnPickTimerSound.setOnClickListener { launchTimerSoundPicker() }
+        btnPickTimerSound.setOnLongClickListener {
+            TimerAlarmPrefs.clearCustom(requireContext())
+            updateTimerSoundLabel()
+            Toast.makeText(requireContext(), "타이머 소리: 기본으로 복원", Toast.LENGTH_SHORT).show()
+            true
+        }
+
+        // ====== 타이머 소리 지속 시간(5~60분 + 연속) ======
+        fun showTimerRingDurationDialog() {
+            val prefs = requireContext().getSharedPreferences(AlarmService.PREFS, Context.MODE_PRIVATE)
+            val currentForever = prefs.getBoolean(TimerAlarmPrefs.KEY_TIMER_RING_FOREVER, false)
+            val currentMinutes = prefs.getInt(TimerAlarmPrefs.KEY_TIMER_RING_DURATION_MINUTES, 5).coerceIn(5, 60)
+
+            val labels = (5..60).map { "${it}분" } + listOf("연속")
+            val picker = NumberPicker(requireContext()).apply {
+                minValue = 0
+                maxValue = labels.size - 1
+                displayedValues = labels.toTypedArray()
+                wrapSelectorWheel = false
+                value = if (currentForever) labels.size - 1 else (currentMinutes - 5)
+            }
+
+            AlertDialog.Builder(requireContext())
+                .setTitle("지속 설정")
+                .setMessage("5분부터 60분까지, 또는 연속을 선택할 수 있습니다.")
+                .setView(picker)
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    val idx = picker.value
+                    val isForever = (idx == labels.size - 1)
+                    val minutes = (idx + 5).coerceIn(5, 60)
+                    prefs.edit()
+                        .putBoolean(TimerAlarmPrefs.KEY_TIMER_RING_FOREVER, isForever)
+                        .putInt(TimerAlarmPrefs.KEY_TIMER_RING_DURATION_MINUTES, minutes)
+                        .apply()
+
+                    val msg = if (isForever) "타이머 지속: 연속" else "타이머 지속: ${minutes}분"
+                    Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+        }
+
+        btnTimerRingDuration.setOnClickListener { showTimerRingDurationDialog() }
+        btnTimerRingDuration.setOnLongClickListener {
+            val prefs = requireContext().getSharedPreferences(AlarmService.PREFS, Context.MODE_PRIVATE)
+            prefs.edit()
+                .putBoolean(TimerAlarmPrefs.KEY_TIMER_RING_FOREVER, false)
+                .putInt(TimerAlarmPrefs.KEY_TIMER_RING_DURATION_MINUTES, 5)
+                .apply()
+            Toast.makeText(requireContext(), "타이머 지속: 5분(기본)으로 복원", Toast.LENGTH_SHORT).show()
+            true
+        }
+
+        btnLog.setOnClickListener {
+            AppLog.showLogDialog(requireContext())
+        }
+        btnLog.setOnLongClickListener {
+            AppLog.clear(requireContext())
+            Toast.makeText(requireContext(), "로그를 삭제했습니다.", Toast.LENGTH_SHORT).show()
+            true
+        }
+
+        // 숫자패드 이동
+        val goInput: (View) -> Unit = {
+            parentFragmentManager.commit {
+                replace(R.id.fragment_container, NumberPadFragment.newInstance(false))
+                addToBackStack(null)
+            }
+        }
+        timerText.setOnClickListener(goInput)
+        nextTimeText.setOnClickListener(goInput)
+
+        // 숫자패드 결과 수신
+        parentFragmentManager.setFragmentResultListener(NumberPadFragment.RESULT_KEY, viewLifecycleOwner) { _, bundle ->
+            val targetAt = bundle.getLong("targetAt", -1L)
+            val dur = bundle.getLong("duration", -1L)
+            val isExtraMode = bundle.getBoolean(NumberPadFragment.ARG_IS_EXTRA_MODE, false)
+            AppLog.i(requireContext(), "TimerFragment", "numberPadResult targetAt=$targetAt duration=$dur extra=$isExtraMode now=${System.currentTimeMillis()}")
+            when {
+                isExtraMode && targetAt > 0L -> {
+                    val remaining = (targetAt - System.currentTimeMillis()).coerceAtLeast(0L)
+                    AppLog.i(requireContext(), "TimerFragment", "extra targetAt converted duration=$remaining targetAt=$targetAt")
+                    addNewBlock(remaining)
+                }
+                isExtraMode && dur > 0L -> addNewBlock(dur)
+                targetAt > 0L -> setTargetAt(targetAt)
+                dur >= 0L     -> setTargetTime(dur)
+            }
+        }
+
+        // 시각 표기
+        ticker = object : Runnable {
+            override fun run() { updateNow(); handler.postDelayed(this, 50L) }
+        }
+        handler.post(ticker!!)
+
+        btn5.setOnClickListener  { setDurationAndPreview(TimeUnit.MINUTES.toMillis(5)) }
+        btn10.setOnClickListener { setDurationAndPreview(TimeUnit.MINUTES.toMillis(10)) }
+        btn15.setOnClickListener { setDurationAndPreview(TimeUnit.MINUTES.toMillis(15)) }
+        btn30.setOnClickListener { setDurationAndPreview(TimeUnit.MINUTES.toMillis(30)) }
+        btn40.setOnClickListener { setDurationAndPreview(TimeUnit.MINUTES.toMillis(40)) }
+        btn50.setOnClickListener { setDurationAndPreview(TimeUnit.MINUTES.toMillis(50)) }
+
+        btnStart.setOnClickListener { if (running) pauseMain() else startMain() }
+        btnReset.setOnClickListener { resetMain() }
+        btnAdd.setOnClickListener   {
+            parentFragmentManager.commit {
+                replace(R.id.fragment_container, NumberPadFragment.newInstance(true))
+                addToBackStack(null)
+            }
+        }
+
+        // 보조 타이머(서비스 지속저장) 동기화 후 UI 복원
+        syncExtraTimersWithService()
+        restoreExtrasUI()
+
+        // 초기 렌더 & 메인 복원
+        timerText.text = formatDuration4(0L)
+        nextTimeText.text = getString(R.string.next_time_prefix, "--")
+        btnStart.text = getString(R.string.btn_start)
+        restoreMainState()
+
+        // 브로드캐스트 리시버 등록
+        registerTimerStateReceiver()
+
+        return v
+    }
+
+    private fun registerTimerStateReceiver() {
+        if (isReceiverRegistered) return
+
+        val filter = IntentFilter(ACTION_TIMER_STATE)
+        ContextCompat.registerReceiver(
+            requireContext(),
+            timerStateReceiver,
+            filter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+        isReceiverRegistered = true
+        AppLog.d(requireContext(), "TimerFragment", "receiver registered")
+    }
+
+    private fun unregisterTimerStateReceiver() {
+        if (!isReceiverRegistered) return
+
+        runCatching {
+            requireContext().unregisterReceiver(timerStateReceiver)
+            isReceiverRegistered = false
+            AppLog.d(requireContext(), "TimerFragment", "receiver unregistered")
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        // 🔹 약간의 지연 후 동기화 (서비스 상태가 안정화될 시간 확보)
+        handler.postDelayed({
+            syncFromServiceStateIfAny()
+            validateAndSyncExtraTimers()
+        }, 100)
+
+        val p = requireContext().getSharedPreferences(AlarmService.PREFS, Context.MODE_PRIVATE)
+        val isRinging = p.getBoolean(AlarmService.KEY_RINGING, false)
+        val startedFromKeyguard = p.getBoolean(AlarmService.KEY_STARTED_FROM_KEYGUARD, false)
+        val km = requireContext().getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+        if (isRinging && startedFromKeyguard && !km.isKeyguardLocked) {
+            // 잠금 화면에서 시작된 알람이라고 해서 앱 화면이 다시 보이는 순간
+            // 자동으로 알람을 꺼 버리면, 사용자는 "한 번 울리다 바로 멈춘다"고 느끼게 된다.
+            // 여기서는 정지하지 말고 플래그만 내려 중복 처리만 막는다.
+            p.edit().putBoolean(AlarmService.KEY_STARTED_FROM_KEYGUARD, false).apply()
+            AppLog.d(requireContext(), "TimerFragment", "alarm still ringing after unlock; keep alarm active")
+        }
+    }
+
+    // 🔹 보조 타이머 상태 검증
+    private fun validateAndSyncExtraTimers() {
+        val now = System.currentTimeMillis()
+
+        // 각 보조 타이머 검사
+        viewModel.extras.value?.forEach { timer ->
+            if (timer.running) {
+                // endTime이 있는지 확인
+                val endTime = extraTimerEndTimes[timer.id]
+
+                if (endTime != null) {
+                    // 종료 시간이 지났으면 타이머 정지
+                    if (endTime <= now) {
+                        // 타이머가 이미 완료된 상태
+                        timer.running = false
+                        timer.remainingMs = 0L
+                        viewModel.setRunning(timer.id, false)
+                        viewModel.setRemaining(timer.id, 0L)
+                        extraTimerEndTimes.remove(timer.id)
+
+                        // UI 업데이트를 위해 뷰 다시 그리기
+                        restoreExtrasUI()
+
+                        android.util.Log.d("TimerFragment", "✅ 완료된 보조 타이머 정리: ${timer.label}")
+                    } else {
+                        // 남은 시간 업데이트
+                        val remaining = (endTime - now).coerceAtLeast(0L)
+                        timer.remainingMs = remaining
+                        viewModel.setRemaining(timer.id, remaining)
+                    }
+                } else if (timer.remainingMs > 0) {
+                    // endTime이 없으면(프로세스 재시작/복원 등) '늘리지' 말고 일시정지로 전환하고
+                    // ClockService에 저장된 endTime을 다시 읽어 동기화가 되도록 한다.
+                    timer.running = false
+                    viewModel.setRunning(timer.id, false)
+                    extraTimerEndTimes.remove(timer.id)
+                    android.util.Log.w("TimerFragment", "⚠️ 보조 타이머 endTime 없음 → 일시정지 전환: ${timer.label}")
+                } else {
+                    // 실행 중이지만 시간이 0인 경우 - 정지 처리
+                    timer.running = false
+                    viewModel.setRunning(timer.id, false)
+                    restoreExtrasUI()
+                }
+            }
+        }
+
+        // ClockService의 실제 상태와 동기화
+        syncExtraTimersWithService()
+    }
+
+    // 🔹 ClockService와 동기화
+    private fun syncExtraTimersWithService() {
+        // ClockService의 지속 저장 데이터 확인
+        val prefs = requireContext().getSharedPreferences("clock_persist_prefs", Context.MODE_PRIVATE)
+        val extrasJson = prefs.getString("extra_timers_json", null)
+        val now = System.currentTimeMillis()
+
+        if (extrasJson.isNullOrBlank()) {
+            // ✅ 서비스에 실행중인 보조 타이머가 없으면:
+            // 1) running=true 로 남아있는 항목은 일시정지로 내려준다(remaining은 유지)
+            // 2) remainingMs <= 0 인 항목은 완료된 것으로 보고 자동 제거한다
+            val list = viewModel.extras.value ?: emptyList()
+            list.forEach { timer ->
+                if (timer.remainingMs <= 0L) {
+                    viewModel.removeExtra(timer.id)
+                    extraTimerEndTimes.remove(timer.id)
+                } else if (timer.running) {
+                    timer.running = false
+                    viewModel.setRunning(timer.id, false)
+                    extraTimerEndTimes.remove(timer.id)
+                }
+            }
+            restoreExtrasUI()
+            return
+        }
+
+        runCatching {
+            val serviceIds = mutableSetOf<String>()
+            val arr = JSONArray(extrasJson)
+
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                val id = o.getString("id")
+                val label = o.optString("label", "타이머")
+                // ✅ ClockService는 endElapsed(부팅 기준) + endAtWall(표시/복원용)을 함께 저장한다.
+                // UI 복원/남은시간 계산은 반드시 wall-clock(epoch millis) 값을 써야 한다.
+                var endAtMs = o.optLong("endAtWall", 0L)
+                if (endAtMs <= 0L) {
+                    // 구버전 호환: endAtWall이 없으면 endElapsed(부팅 기준)을 remain으로 환산
+                    val endElapsed = o.optLong("endElapsed", 0L)
+                    if (endElapsed > 0L) {
+                        val remain = (endElapsed - android.os.SystemClock.elapsedRealtime()).coerceAtLeast(0L)
+                        endAtMs = now + remain
+                    }
+                }
+
+                serviceIds.add(id)
+
+                val remaining = (endAtMs - now).coerceAtLeast(0L)
+                if (remaining > 0L) {
+                    extraTimerEndTimes[id] = endAtMs
+                    viewModel.upsertExtraFromService(id, label, remaining, true)
+                } else {
+                    // ✅ 이미 끝난 타이머는 UI/상태에서 제거 (00:00:00 잔존 방지)
+                    extraTimerEndTimes.remove(id)
+                    viewModel.removeExtra(id)
+                }
+            }
+
+            // 서비스에 없는 running 타이머는 '늘리지' 않도록 일시정지로 전환
+            // + remainingMs <= 0 인 항목은 완료로 보고 제거
+            viewModel.extras.value?.forEach { timer ->
+                if (!serviceIds.contains(timer.id)) {
+                    if (timer.remainingMs <= 0L) {
+                        viewModel.removeExtra(timer.id)
+                        extraTimerEndTimes.remove(timer.id)
+                    } else if (timer.running) {
+                        timer.running = false
+                        viewModel.setRunning(timer.id, false)
+                        extraTimerEndTimes.remove(timer.id)
+                    }
+                }
+            }
+
+            restoreExtrasUI()
+        }.onFailure { e ->
+            android.util.Log.w("TimerFragment", "⚠️ syncExtraTimersWithService 실패: ${e.message}")
+        }
+    }
+
+
+    // -------- 보조 타이머 UI --------
+    private fun restoreExtrasUI() {
+        extraTimersContainer.removeAllViews()
+        viewModel.extras.value?.forEach { addBlockTimerView(it) }
+        updateExtraSummaryUI()
+        // 새 보조 타이머를 추가하면 하단으로 스크롤해서 바로 조작 가능하게
+        timerScrollView.post { timerScrollView.smoothScrollTo(0, extraTimersContainer.bottom) }
+    }
+
+    private fun addNewBlock(initialMs: Long) {
+        if (initialMs <= 0L) return
+        val state = viewModel.addExtra(label = "타이머", durationMs = initialMs)
+        addBlockTimerView(state)
+        updateExtraSummaryUI()
+    }
+
+    private fun addBlockTimerView(state: TimerViewModel.ExtraTimer) {
+        val root = layoutInflater.inflate(R.layout.timer_block, extraTimersContainer, false)
+        val labelView = root.findViewById<TextView>(R.id.blockLabel)
+        val tv       = root.findViewById<TextView>(R.id.blockTimerText)
+        val btnStart = root.findViewById<Button>(R.id.blockStartBtn)
+        val btnDel   = root.findViewById<Button>(R.id.blockDeleteBtn)
+
+        fun render() {
+            tv.text = formatDurationShort(state.remainingMs)
+            btnStart.text = if (state.running) getString(R.string.btn_pause) else getString(R.string.btn_start)
+            labelView.text = state.label
+        }
+        render()
+
+        tv.setOnClickListener { setTargetTime(state.remainingMs) }
+
+        labelView.setOnClickListener {
+            showRenameDialog(labelView) { newLabel ->
+                viewModel.renameExtra(state.id, newLabel)
+                state.label = newLabel
+                render()
+            }
+        }
+
+        val updateRunnable = object : Runnable {
+            override fun run() {
+                if (state.running) {
+                    val endTime = extraTimerEndTimes[state.id] ?: 0L
+                    if (endTime > 0L) {
+                        val remain = (endTime - System.currentTimeMillis()).coerceAtLeast(0L)
+                        state.remainingMs = remain
+                        viewModel.setRemaining(state.id, remain)
+                        tv.text = formatDurationShort(remain)
+                        updateExtraSummaryUI()
+
+                        if (remain <= 0L) {
+                            state.running = false
+                            viewModel.setRunning(state.id, false)
+                            btnStart.text = getString(R.string.btn_start)
+                            tv.text = formatDurationShort(0L)
+                            extraTimerEndTimes.remove(state.id)
+                            return
+                        }
+                    }
+                    handler.postDelayed(this, 100L)
+                }
+            }
+        }
+
+        btnStart.setOnClickListener {
+            if (state.running) {
+                handler.removeCallbacks(updateRunnable)
+                viewModel.setRunning(state.id, false)
+                state.running = false
+                btnStart.text = getString(R.string.btn_start)
+                extraTimerEndTimes.remove(state.id)
+                runCatching { ClockService.stopExtraTimer(requireContext(), state.id) }
+                updateExtraSummaryUI()
+            } else {
+                if (state.remainingMs <= 0L) return@setOnClickListener
+
+                extraTimerEndTimes[state.id] = System.currentTimeMillis() + state.remainingMs
+                viewModel.setRunning(state.id, true)
+                state.running = true
+                btnStart.text = getString(R.string.btn_pause)
+
+                runCatching {
+                    ClockService.startExtraTimer(
+                        requireContext(),
+                        state.id,
+                        state.label,
+                        state.remainingMs,
+                        state.totalDurationMs
+                    )
+                }
+                handler.post(updateRunnable)
+                updateExtraSummaryUI()
+            }
+        }
+
+        btnDel.setOnClickListener {
+            handler.removeCallbacks(updateRunnable)
+            extraTimerEndTimes.remove(state.id)
+            viewModel.removeExtra(state.id)
+            runCatching { ClockService.stopExtraTimer(requireContext(), state.id) }
+            extraTimersContainer.removeView(root)
+            updateExtraSummaryUI()
+        }
+
+        if (state.running && state.remainingMs > 0L) {
+            // endTime이 없으면(프로세스 재시작/복원 등) ClockService 지속저장값으로 동기화 시도
+            if (!extraTimerEndTimes.containsKey(state.id)) {
+                syncExtraTimersWithService()
+            }
+
+            val endTime = extraTimerEndTimes[state.id]
+            if (endTime == null) {
+                // endTime 복원 실패 시 '늘리지' 않기 위해 일시정지로 전환
+                state.running = false
+                viewModel.setRunning(state.id, false)
+                btnStart.text = getString(R.string.btn_start)
+                android.util.Log.w("TimerFragment", "⚠️ 보조 타이머 endTime 복원 실패 → 일시정지: ${state.label}")
+            } else {
+                runCatching {
+                    val actualRemaining = (endTime - System.currentTimeMillis()).coerceAtLeast(0L)
+                    if (actualRemaining > 0L) {
+                        ClockService.startExtraTimer(
+                            requireContext(),
+                            state.id,
+                            state.label,
+                            actualRemaining,
+                            state.totalDurationMs  // ← 이 파라미터를 추가!
+                        )
+                    }
+                }
+                handler.post(updateRunnable)
+            }
+        }
+
+        extraTimersContainer.addView(root)
+    }
+
+    // -------- 메인 타이머 --------
+    private fun setTargetAt(targetAtMillis: Long) {
+        pendingMainTargetAtMs = targetAtMillis
+        timeLeftInMillis = (targetAtMillis - System.currentTimeMillis()).coerceAtLeast(0L)
+        viewModel.setMainDraft(timeLeftInMillis, targetAtMillis)
+        AppLog.i(requireContext(), "TimerFragment", "setTargetAt targetAt=$targetAtMillis remain=$timeLeftInMillis")
+        updateMainTimerUI()
+    }
+
+    private fun setTargetTime(durationMillis: Long) {
+        pendingMainTargetAtMs = null
+        timeLeftInMillis = durationMillis.coerceAtLeast(0L)
+        viewModel.setMainDraft(timeLeftInMillis, null)
+        AppLog.i(requireContext(), "TimerFragment", "setTargetTime durationMs=$timeLeftInMillis")
+        updateMainTimerUI()
+    }
+
+    private fun setDurationAndPreview(durationMillis: Long) {
+        pendingMainTargetAtMs = null
+        timeLeftInMillis = durationMillis.coerceAtLeast(0L)
+        viewModel.setMainDraft(timeLeftInMillis, null)
+        updateMainTimerUI()
+    }
+
+    // ✅ 메인 타이머 표시용 프레임 타이커(Stopwatch처럼 부드럽게)
+    private val mainTickRunnable = object : Runnable {
+        override fun run() {
+            if (!running || mainEndElapsed <= 0L) return
+            val remain = (mainEndElapsed - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
+            timeLeftInMillis = remain
+            updateMainTimerUI()
+            if (remain <= 0L) {
+                onMainFinishedLocal()
+            } else {
+                handler.postDelayed(this, 16L) // ~60fps
+            }
+        }
+    }
+
+    private fun startMainTicker() {
+        handler.removeCallbacks(mainTickRunnable)
+        handler.post(mainTickRunnable)
+    }
+
+    private fun stopMainTicker() {
+        handler.removeCallbacks(mainTickRunnable)
+    }
+
+    private fun onMainFinishedLocal() {
+        pendingMainTargetAtMs = null
+        // UI 프레임 타이커가 먼저 0에 도달하더라도 여기서 타이머를 정지시키면,
+        // 정확 알람(AlarmManager) 직전에 STOP_TIMER가 먼저 들어가 알림이 사라질 수 있다.
+        // 실제 종료/알람 울림은 ClockService + AlarmReceiver를 source of truth로 둔다.
+        stopMainTicker()
+        running = false
+        mainEndElapsed = 0L
+        timeLeftInMillis = 0L
+        btnStart.text = getString(R.string.btn_start)
+        timerText.text = formatDuration4(0L)
+        nextTimeText.text = getString(R.string.next_time_prefix, "--")
+        AppLog.d(requireContext(), "TimerFragment", "local UI reached zero; waiting for service/alarm finalization")
+    }
+
+    private fun startMainFromRemain(remain: Long, exactEndAt: Long? = null) {
+        stopMainTicker()
+        if (remain <= 0L) { resetMain(); return }
+        viewModel.clearMainDraft()
+        val endAt = exactEndAt ?: (System.currentTimeMillis() + remain)
+
+        // 표시/계산은 ELAPSED_REALTIME 기반
+        mainEndElapsed = SystemClock.elapsedRealtime() + remain
+        pendingMainTargetAtMs = endAt
+        running = true
+        btnStart.text = getString(R.string.btn_pause)
+        startMainTicker()
+
+        scheduleExactAlarm(endAt, "메인 타이머")
+        viewModel.setMain(endAt, true)
+        AppLog.i(requireContext(), "TimerFragment", "startMainFromRemain remain=$remain endAt=$endAt exact=${exactEndAt != null}")
+    }
+
+    private fun startMain() {
+        val pendingTargetAt = pendingMainTargetAtMs
+        val remain = pendingTargetAt?.let { targetAt ->
+            (targetAt - System.currentTimeMillis()).coerceAtLeast(0L)
+        } ?: timeLeftInMillis
+        if (remain <= 0L) {
+            resetMain()
+            return
+        }
+        timeLeftInMillis = remain
+        AppLog.i(requireContext(), "TimerFragment", "startMain remain=$remain pendingTargetAt=$pendingTargetAt")
+        if (pendingTargetAt != null) {
+            startMainFromRemain(remain, exactEndAt = pendingTargetAt)
+            runCatching { ClockService.startTimerAt(requireContext(), pendingTargetAt) }
+        } else {
+            startMainFromRemain(remain)
+            runCatching { ClockService.startTimer(requireContext(), remain) }
+        }
+    }
+
+    private fun pauseMain() {
+        stopMainTicker()
+        val remain = timeLeftInMillis.coerceAtLeast(0L)
+        running = false
+        mainEndElapsed = 0L
+        pendingMainTargetAtMs = null
+        btnStart.text = getString(R.string.btn_start)
+        cancelExactAlarm()
+        viewModel.setMain(null, false)
+        viewModel.setMainDraft(remain, null)
+
+        // 🔹 서비스 호출 강화: 재시도 로직 추가
+        runCatching {
+            ClockService.pauseTimer(requireContext())
+        }.onFailure {
+            // 실패 시 100ms 후 재시도
+            handler.postDelayed({
+                runCatching { ClockService.pauseTimer(requireContext()) }
+            }, 100)
+        }
+
+        AppLog.d(requireContext(), "TimerFragment", "pauseMain complete")
+    }
+
+    private fun resetMain() {
+        stopMainTicker()
+        running = false
+        mainEndElapsed = 0L
+        pendingMainTargetAtMs = null
+        timeLeftInMillis = 0L
+        timerText.text = formatDuration4(0L)
+        btnStart.text = getString(R.string.btn_start)
+        nextTimeText.text = getString(R.string.next_time_prefix, "--")
+        cancelExactAlarm()
+
+        // 🔹 서비스 호출 강화: 재시도 로직 추가
+        runCatching {
+            ClockService.stopTimer(requireContext())
+        }.onFailure {
+            // 실패 시 100ms 후 재시도
+            handler.postDelayed({
+                runCatching { ClockService.stopTimer(requireContext()) }
+            }, 100)
+        }
+
+        viewModel.setMain(null, false)
+        viewModel.clearMainDraft()
+
+        AppLog.d(requireContext(), "TimerFragment", "resetMain complete")
+    }
+
+    // ✅ 브로드캐스트 수신 시 호출: 서비스 호출 없이 UI만 업데이트
+    private fun resetMainUIOnly() {
+        stopMainTicker()
+        running = false
+        mainEndElapsed = 0L
+        pendingMainTargetAtMs = null
+        timeLeftInMillis = 0L
+        timerText.text = formatDuration4(0L)
+        btnStart.text = getString(R.string.btn_start)
+        nextTimeText.text = getString(R.string.next_time_prefix, "--")
+        cancelExactAlarm()
+        viewModel.setMain(null, false)
+        viewModel.clearMainDraft()
+
+        currentTimerSessionId = 0L
+        AppLog.d(requireContext(), "TimerFragment", "resetMainUIOnly from broadcast")
+    }
+    private fun updateMainTimerUI() {
+        timerText.text = formatDuration4(timeLeftInMillis)
+
+        val alarmText = if (timeLeftInMillis <= 0L) {
+            "--"
+        } else {
+            val endAt = when {
+                running -> viewModel.mainEndAtMs.value ?: pendingMainTargetAtMs ?: (System.currentTimeMillis() + timeLeftInMillis)
+                pendingMainTargetAtMs != null -> pendingMainTargetAtMs!!
+                else -> System.currentTimeMillis() + timeLeftInMillis
+            }
+            formatEndAtKorean(endAt)
+        }
+
+        nextTimeText.text = getString(R.string.next_time_prefix, alarmText)
+    }
+
+    private fun updateExtraSummaryUI() {
+        // 보조 타이머 요약(메인 화면 하단 작은 글씨)
+        val extras = viewModel.extras.value ?: emptyList()
+        val activeExtras = extras.filter { it.remainingMs > 0L }
+        if (!this::extraSummaryText.isInitialized) return
+
+        if (activeExtras.isEmpty()) {
+            extraSummaryText.visibility = View.GONE
+            extraSummaryText.text = ""
+            return
+        }
+
+        val now = System.currentTimeMillis()
+
+        val parts = activeExtras.take(3).map { t ->
+            val remain = t.remainingMs.coerceAtLeast(0L)
+            if (t.running) {
+                val endAt = extraTimerEndTimes[t.id] ?: (now + remain)
+                val endText = formatEndAtKorean(endAt)
+                // 예: "타이머 00:28:10 (내일 1월 4일 오후 3:12)"
+                "${t.label} ${formatDurationShort(remain)} (${endText})"
+            } else {
+                // 예: "타이머 00:28:10 (일시정지)"
+                "${t.label} ${formatDurationShort(remain)} (일시정지)"
+            }
+        }
+
+        var text = "보조 타이머: " + parts.joinToString(" · ")
+        if (activeExtras.size > 3) text += " …"
+
+        extraSummaryText.text = text
+        extraSummaryText.visibility = View.VISIBLE
+    }
+
+
+
+    private fun restoreMainState() {
+        val savedEndAt = viewModel.mainEndAtMs.value
+        val runningSaved = viewModel.mainRunning.value == true
+        if (!runningSaved || savedEndAt == null) {
+            restoreMainDraftState()
+            return
+        }
+
+        val persistedEndAtWall = persistedTimerEndWall()
+        val finalEndAt = when {
+            persistedEndAtWall > 0L -> persistedEndAtWall
+            savedEndAt > System.currentTimeMillis() -> savedEndAt
+            else -> 0L
+        }
+
+        if (finalEndAt <= 0L) {
+            viewModel.setMain(null, false)
+            running = false
+            mainEndElapsed = 0L
+            pendingMainTargetAtMs = null
+            timeLeftInMillis = 0L
+            updateMainTimerUI()
+            return
+        }
+
+        val remain = (finalEndAt - System.currentTimeMillis()).coerceAtLeast(0L)
+
+        stopMainTicker()
+        pendingMainTargetAtMs = finalEndAt
+        mainEndElapsed = SystemClock.elapsedRealtime() + remain
+        timeLeftInMillis = remain
+        running = true
+        btnStart.text = getString(R.string.btn_pause)
+
+        updateMainTimerUI()
+        scheduleExactAlarm(finalEndAt, "메인 타이머")
+        viewModel.setMain(finalEndAt, true)
+        startMainTicker()
+
+        AppLog.i(requireContext(), "TimerFragment", "restoreMainState endAt=$finalEndAt remain=$remain")
+    }
+
+
+    private fun restoreMainDraftState() {
+        val draftRemaining = viewModel.mainDraftRemainingMs.value ?: 0L
+        val draftTargetAt = viewModel.mainDraftTargetAtMs.value
+        if (draftRemaining <= 0L && (draftTargetAt == null || draftTargetAt <= 0L)) return
+
+        running = false
+        mainEndElapsed = 0L
+        pendingMainTargetAtMs = draftTargetAt
+        timeLeftInMillis = if (draftTargetAt != null && draftTargetAt > 0L) {
+            (draftTargetAt - System.currentTimeMillis()).coerceAtLeast(0L)
+        } else {
+            draftRemaining.coerceAtLeast(0L)
+        }
+        btnStart.text = getString(R.string.btn_start)
+        updateMainTimerUI()
+        AppLog.i(requireContext(), "TimerFragment", "restoreMainDraftState remain=$timeLeftInMillis targetAt=$draftTargetAt")
+    }
+
+    // -------- 유틸 --------
+
+    private fun persistedTimerEndWall(sessionId: Long = 0L): Long {
+        val prefs = requireContext().getSharedPreferences(PERSIST_PREFS, Context.MODE_PRIVATE)
+        val persistedSessionId = prefs.getLong(KEY_TIMER_SESSION_ID, 0L)
+        val persistedEndWall = prefs.getLong(KEY_TIMER_END_WALL, 0L)
+        return if (persistedEndWall > 0L && (sessionId <= 0L || persistedSessionId == 0L || persistedSessionId == sessionId)) {
+            persistedEndWall
+        } else {
+            0L
+        }
+    }
+
+    private fun truncateToMinute(millis: Long): Long = (millis / 60_000L) * 60_000L
+
+    private fun syncFromServiceStateIfAny() {
+        val p = requireContext().getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
+        val state = p.getString(KEY_LAST_SYNC_STATE, null)
+        val remain = p.getLong(KEY_LAST_SYNC_REMAIN, 0L).coerceAtLeast(0L)
+        val sessionId = p.getLong(KEY_LAST_SYNC_SESSION_ID, 0L)
+
+        AppLog.d(requireContext(), "TimerFragment", "syncFromServiceStateIfAny state=$state remain=$remain session=$sessionId")
+
+        if (state != null) {
+            p.edit()
+                .remove(KEY_LAST_SYNC_STATE)
+                .remove(KEY_LAST_SYNC_REMAIN)
+                .remove(KEY_LAST_SYNC_SESSION_ID)
+                .apply()
+
+            when (state) {
+                STATE_PAUSED -> {
+                    if (sessionId > 0L) currentTimerSessionId = sessionId
+                    stopMainTicker()
+                    running = false
+                    mainEndElapsed = 0L
+                    timeLeftInMillis = remain
+                    btnStart.text = getString(R.string.btn_start)
+                    updateMainTimerUI()
+                    viewModel.setMain(null, false)
+                }
+                STATE_RUNNING -> {
+                    stopMainTicker()
+                    if (sessionId > 0L) {
+                        currentTimerSessionId = sessionId
+                        terminalSessionId = 0L
+                    }
+                    val persistedEndAtWall = persistedTimerEndWall(sessionId)
+                    val restoredRemain = if (persistedEndAtWall > 0L) {
+                        (persistedEndAtWall - System.currentTimeMillis()).coerceAtLeast(0L)
+                    } else {
+                        remain
+                    }
+                    val nowElapsed = SystemClock.elapsedRealtime()
+                    val restoredEndElapsed = nowElapsed + restoredRemain
+                    mainEndElapsed = restoredEndElapsed
+                    running = true
+                    timeLeftInMillis = restoredRemain
+                    btnStart.text = getString(R.string.btn_pause)
+                    if (persistedEndAtWall > 0L) {
+                        pendingMainTargetAtMs = persistedEndAtWall
+                        scheduleExactAlarm(persistedEndAtWall, "메인 타이머")
+                        viewModel.setMain(persistedEndAtWall, true)
+                    } else {
+                        val endAtWall = System.currentTimeMillis() + restoredRemain
+                        pendingMainTargetAtMs = endAtWall
+                        scheduleExactAlarm(endAtWall, "메인 타이머")
+                        viewModel.setMain(endAtWall, true)
+                    }
+                    startMainTicker()
+                }
+                STATE_STOPPED, STATE_FINISHED -> {
+                    lastTerminalStateAt = System.currentTimeMillis()
+                    if (sessionId > 0L) {
+                        terminalSessionId = sessionId
+                        if (currentTimerSessionId == sessionId) currentTimerSessionId = 0L
+                    }
+                    if (timeLeftInMillis == 0L) {
+                        resetMainUIOnly()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun updateNow() {
+        val now = Calendar.getInstance()
+        val h = now.get(Calendar.HOUR_OF_DAY)
+        val m = now.get(Calendar.MINUTE)
+        val s = now.get(Calendar.SECOND)
+        val ms = now.get(Calendar.MILLISECOND)
+        currentTimeText.text = String.format(Locale.getDefault(), "%02d:%02d:%02d.%03d", h, m, s, ms)
+    }
+
+    private fun formatDuration4(msTotal: Long): String {
+        val t = max(0L, msTotal)
+        val h = (t / 3_600_000)
+        val mm = (t / 60_000) % 60
+        val s = (t / 1_000) % 60
+        val ms = t % 1_000
+        return String.format(Locale.getDefault(), "%02d:%02d:%02d.%03d", h, mm, s, ms)
+    }
+
+    private fun formatDurationShort(msTotal: Long): String {
+        val m = max(0L, msTotal)
+        val h = (m / 3_600_000)
+        val mm = (m / 60_000) % 60
+        val s = (m / 1_000) % 60
+        return String.format(Locale.getDefault(), "%02d:%02d:%02d", h, mm, s)
+    }
+
+
+    private fun formatEndAtKorean(endAtMillis: Long): String {
+        val now = java.util.Calendar.getInstance()
+        val today0 = (now.clone() as java.util.Calendar).apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
+        val end = java.util.Calendar.getInstance().apply { timeInMillis = endAtMillis }
+        val end0 = (end.clone() as java.util.Calendar).apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
+        val diffDays = ((end0 - today0) / 86_400_000L).toInt()
+
+        val date = java.util.Date(truncateToMinute(endAtMillis))
+        val timeFmt = java.text.SimpleDateFormat("a h:mm", java.util.Locale.KOREA)
+        val dayFmt = java.text.SimpleDateFormat("M월 d일", java.util.Locale.KOREA)
+
+        return when (diffDays) {
+            0 -> "오늘 ${timeFmt.format(date)}"
+            1 -> "내일 ${dayFmt.format(date)} ${timeFmt.format(date)}"
+            else -> "${dayFmt.format(date)} ${timeFmt.format(date)}"
+        }
+    }
+
+
+    // ====== 프리셋(5/10/15/30/40/50) 슬라이더 + 스냅 ======
+    private fun setupPresetSlider() {
+        // 초기에는 10/15/30이 기본으로 보이도록 15분을 가운데로 위치
+        binding.root.post { centerPresetOn(btn15) }
+
+        // 스크롤이 멈추면 가장 가까운 버튼으로 스냅(터치 드래그/플링 모두 대응)
+        val snapRunnable = Runnable { snapPresetToNearest() }
+
+        fun scheduleSnap() {
+            presetScrollView.removeCallbacks(snapRunnable)
+            presetScrollView.postDelayed(snapRunnable, 120L)
+        }
+
+        presetScrollView.setOnScrollChangeListener { _, _, _, _, _ ->
+            scheduleSnap()
+        }
+
+        presetScrollView.setOnTouchListener { _, ev ->
+            if (ev.action == android.view.MotionEvent.ACTION_UP ||
+                ev.action == android.view.MotionEvent.ACTION_CANCEL
+            ) {
+                scheduleSnap()
+            }
+            false
+        }
+    }
+
+    private fun centerPresetOn(target: View) {
+        val viewport = presetScrollView.width
+        if (viewport <= 0) return
+
+        val targetCenter = target.left + (target.width / 2)
+        val desiredScrollX = targetCenter - (viewport / 2)
+
+        val maxScroll = max(0, presetContainer.width - viewport)
+        presetScrollView.scrollTo(desiredScrollX.coerceIn(0, maxScroll), 0)
+    }
+
+    private fun snapPresetToNearest() {
+        val viewport = presetScrollView.width
+        if (viewport <= 0) return
+
+        val centerX = presetScrollView.scrollX + (viewport / 2)
+
+        var bestChild: View? = null
+        var bestDist = Long.MAX_VALUE
+
+        for (i in 0 until presetContainer.childCount) {
+            val child = presetContainer.getChildAt(i)
+            if (child.visibility != View.VISIBLE) continue
+            val childCenter = child.left + (child.width / 2)
+            val dist = abs((childCenter - centerX).toLong())
+            if (dist < bestDist) {
+                bestDist = dist
+                bestChild = child
+            }
+        }
+
+        val target = bestChild ?: return
+        val targetCenter = target.left + (target.width / 2)
+        val desiredScrollX = targetCenter - (viewport / 2)
+
+        val maxScroll = max(0, presetContainer.width - viewport)
+        presetScrollView.smoothScrollTo(desiredScrollX.coerceIn(0, maxScroll), 0)
+    }
+
+
+    /**
+     * 프리셋(원형 버튼) 표시용 라벨
+     * - 10분, 15분, 30분 등
+     * - 향후 1시간, 1시간 30분 같은 케이스도 자연스럽게 표시
+     */
+    private fun formatPresetLabel(durationMillis: Long): String {
+        val totalMinutes = TimeUnit.MILLISECONDS.toMinutes(max(0L, durationMillis))
+        val hours = totalMinutes / 60
+        val minutes = totalMinutes % 60
+        return when {
+            hours > 0 && minutes > 0 -> "${hours}시간 ${minutes}분"
+            hours > 0 -> "${hours}시간"
+            else -> "${totalMinutes}분"
+        }
+    }
+
+    private fun showRenameDialog(target: TextView, onRenamed: ((String) -> Unit)? = null) {
+        val input = EditText(requireContext()).apply {
+            inputType = InputType.TYPE_CLASS_TEXT
+            setText(target.text?.toString() ?: "")
+            setSelection(text.length)
+        }
+        AlertDialog.Builder(requireContext())
+            .setTitle("라벨 변경")
+            .setView(input)
+            .setPositiveButton("확인") { dlg, _ ->
+                val txt = input.text?.toString()?.ifBlank { "타이머" } ?: "타이머"
+                target.text = txt
+                onRenamed?.invoke(txt)
+                dlg.dismiss()
+            }
+            .setNegativeButton("취소") { dlg, _ -> dlg.dismiss() }
+            .show()
+    }
+
+    override fun onDestroyView() {
+        // 🔹 정리 작업 강화
+        pendingBroadcastRunnable?.let {
+            broadcastDebouncer.removeCallbacks(it)
+        }
+        pendingBroadcastRunnable = null
+
+        ticker?.let { handler.removeCallbacks(it) }
+        handler.removeCallbacksAndMessages(null)
+        broadcastDebouncer.removeCallbacksAndMessages(null)
+        extraTimerEndTimes.clear()
+
+        unregisterTimerStateReceiver()
+        _binding = null
+        super.onDestroyView()
+    }
+}
