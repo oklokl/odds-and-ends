@@ -1,0 +1,6 @@
+# AGP 9.3+ R8 keep rules.
+# Keep only the Gson-persisted model schema stable; allow R8 to optimize their code.
+-keepattributes SourceFile,LineNumberTable,Signature,*Annotation*
+
+-keep,allowoptimization class com.krdonon.microphone.data.model.RecordingFile { *; }
+-keep,allowoptimization class com.krdonon.microphone.data.model.Category { *; }
