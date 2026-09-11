@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">K 메트로놈</string>
+    <string name="notification_channel_name">메트로놈</string>
+    <string name="notification_channel_description">메트로놈 실행 상태 알림</string>
+    <string name="notification_title">메트로놈</string>
+    <string name="notification_running">실행 중</string>
+    <string name="notification_paused">일시정지</string>
+    <string name="action_play">재생</string>
+    <string name="action_pause">일시정지</string>
+    <string name="action_stop">중지</string>
+
+    <!-- 새로 추가 -->
+    <string name="sound_effect_source_title">사운드 효과 출처 (Sound Effect Source)</string>
+    <string name="sound_effect_thanks">음원을 무료로 제공 해주셔서 감사합니다.</string>
+</resources>
