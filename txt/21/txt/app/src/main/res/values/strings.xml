@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">글쓰기 pdf</string>
+    <string name="new_document">새 문서</string>
+    <string name="save">저장</string>
+    <string name="export_pdf">PDF 내보내기</string>
+    <string name="print">인쇄</string>
+    <string name="file_name">파일 이름</string>
+    <string name="untitled">제목 없음</string>
+    <string name="saved">저장되었습니다</string>
+    <string name="auto_saved">자동 저장됨</string>
+    <string name="error_save">저장 실패</string>
+    <string name="error_load">파일 열기 실패</string>
+    <string name="no_files">파일이 없습니다</string>
+    <string name="permission_required">저장소 권한이 필요합니다</string>
+</resources>
