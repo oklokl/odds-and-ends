@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Week" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- Android 15(API 35+)에서 지원 중단된 SHORT_EDGES 대신 ALWAYS 모드 적용 -->
+        <item name="android:windowLayoutInDisplayCutoutMode">always</item>
+    </style>
+</resources>
