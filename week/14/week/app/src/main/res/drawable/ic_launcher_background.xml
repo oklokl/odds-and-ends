@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 상단 헤더 영역 (파스텔 스카이블루 그라데이션) -->
+    <path
+        android:pathData="M0,0h108v36h-108z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="0"
+                android:startY="0"
+                android:endX="108"
+                android:endY="36"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#FFC4DEFE" />
+                <item android:offset="1.0" android:color="#FFACCAFF" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- 하단 본체 영역 (소프트 화이트 / 연하늘색 그라데이션) -->
+    <path
+        android:pathData="M0,36h108v72h-108z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="54"
+                android:startY="36"
+                android:endX="54"
+                android:endY="108"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#FFF6F9FE" />
+                <item android:offset="1.0" android:color="#FFEEF4FD" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- 헤더와 본체 사이의 부드러운 구분선 -->
+    <path
+        android:pathData="M0,36h108"
+        android:strokeWidth="0.8"
+        android:strokeColor="#339FC3F0" />
+
+</vector>
