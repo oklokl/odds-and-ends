@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  시계 알림(펼친 상태)
+  - 제목은 ClockNotificationManager의 NotificationBuilder setSubText()로 표시한다.
+  - 본문에는 TextClock 기반 현재 시각(24시간)만 한 줄로 크게 표시한다.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="56dp"
+    android:orientation="vertical"
+    android:gravity="center_vertical"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="4dp"
+    android:paddingBottom="6dp">
+
+    <TextClock
+        android:id="@+id/clock_notification_text_clock"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:format12Hour="HH:mm:ss"
+        android:format24Hour="HH:mm:ss"
+        android:gravity="start|center_vertical"
+        android:textStyle="bold"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="22sp"
+        android:autoSizeMaxTextSize="36sp"
+        android:autoSizeStepGranularity="1sp"
+        android:textSize="36sp"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+</LinearLayout>

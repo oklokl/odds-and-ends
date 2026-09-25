@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Expanded RemoteViews
+  - 우측 액션 버튼 때문에 하단 subtitle(종료 시각)이 잘리는 현상을 줄이기 위해
+    1행(타이틀/남은시간 + 버튼), 2행(subtitle 전체폭) 구조로 배치한다.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:minHeight="96dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <!-- Row 1: Title/Time (left) + Actions (right) -->
+    <LinearLayout
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp">
+
+            <TextView
+                android:id="@+id/title_big"
+                android:text="@string/label_timer"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <!--
+              RemoteViews에서 긴 시간이 표시될 때 줄바꿈/잘림이 발생하지 않도록
+              1줄 고정 + AutoSize 적용 (API 26+).
+            -->
+            <Chronometer
+                android:id="@+id/chronometer_big"
+                android:format="%s"
+                android:textStyle="bold"
+                android:includeFontPadding="false"
+                android:singleLine="true"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:autoSizeTextType="uniform"
+                android:autoSizeMinTextSize="18sp"
+                android:autoSizeMaxTextSize="44sp"
+                android:autoSizeStepGranularity="1sp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:id="@+id/btn_toggle_big"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:padding="6dp"
+                android:contentDescription="@string/desc_toggle"
+                android:src="@drawable/ic_pause" />
+
+            <ImageView
+                android:id="@+id/btn_stop_big"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:padding="6dp"
+                android:contentDescription="@string/desc_stop"
+                android:src="@drawable/ic_stop"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Row 2: Subtitle uses full width (prevents truncation by action buttons) -->
+    <TextView
+        android:id="@+id/subtitle_big"
+        android:text=""
+        android:textSize="14sp"
+        android:alpha="0.75"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:layout_marginTop="4dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+</LinearLayout>
