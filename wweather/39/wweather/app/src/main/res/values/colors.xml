@@ -1,0 +1,15 @@
+<resources>
+    <!-- 기본 Material 색상 -->
+    <color name="purple_200">#BB86FC</color>
+    <color name="purple_500">#6200EE</color>
+    <color name="purple_700">#3700B3</color>
+    <color name="teal_200">#03DAC5</color>
+    <color name="teal_700">#018786</color>
+
+    <!-- 하단 방위 풍향계 텍스트 색상 -->
+    <color name="value_red">#D32F2F</color>
+
+    <!-- 흑/백 -->
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+</resources>

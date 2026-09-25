@@ -1,0 +1,75 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">허리 날씨</string>
+
+
+    <string name="checking_location">위치 확인중…</string>
+    <string name="location_not_found">위치를 가져올 수 없음</string>
+    <string name="gps_off">GPS가 꺼져 있습니다. 켜 주세요.</string>
+
+    <string name="pressure_default">기압: -</string>
+    <string name="pressure_value">기압: %1$s hPa</string>
+    <string name="emoji_description">상태 아이콘</string>
+    <string name="region_value">%1$s 기압</string>
+
+
+    <string name="weather_default">날씨 확인중…</string>
+    <string name="weather_rain">지금 비 옴</string>
+    <string name="weather_no_rain">지금 비 안옴</string>
+    <string name="weather_unknown">지금 비 확인 불가</string>
+    <string name="api_error">API 오류: %1$s</string>
+    <string name="open_settings">지역 열기</string>
+
+    <string name="feeling_pain">아품</string>
+    <string name="feeling_ok">안아품</string>
+    <string name="empty" />
+
+
+    <string name="alert_change">기압 변화 알림</string>
+    <string name="alert_condition">조건부 알림</string>
+    <string name="alert_sensitivity">알림 민감도</string>
+    <string name="save">저장</string>
+    <string name="sensitivity_value">기압 범위: %1$d ~ %2$d hPa</string>
+    <string name="settings_saved">설정이 저장되었습니다</string>
+    <string name="background_location_needed">백그라운드 위치 권한이 필요합니다. 설정에서 허용해 주세요.</string>
+
+    <string name="temp_label">현재 온도</string>
+    <string name="temp_default">-</string>
+    <string name="wind_dir_label">풍향</string><string name="wind_speed_label">풍속</string><string name="humidity_label">습도</string><string name="wind_legend">풍향 0-N, 90-E, 180-S, 270-W, 360-무풍</string><string name="value_default">-</string><string name="save_image">이미지 저장</string>
+    <string name="share_image">공유</string>
+
+
+
+    <!-- Added for i18n (wind/compass UI & lint cleanup) -->
+    <string name="wind_ui_button">풍향 UI</string>
+    <string name="retry_button">재접속</string>
+    <string name="log_button">로그</string>
+    <string name="status_start">시작</string>
+    <string name="status_in_progress">시도중…</string>
+    <string name="status_success">성공</string>
+    <string name="status_fail">실패</string>
+    <string name="current_time_default">현재 시간: -</string>
+    <string name="current_time_value">현재 시간: %1$s</string>
+    <string name="diagnostics_log_title">진단 로그</string>
+    <string name="close">닫기</string>
+    <string name="copy">복사</string>
+    <string name="share">공유</string>
+    <string name="log_empty">(로그 없음)</string>
+    <string name="log_copied">로그를 복사했습니다</string>
+    <string name="share_log_title">로그 공유</string>
+    <string name="weather_rain_cache">지금 비 옴 (캐시)</string>
+    <string name="weather_no_rain_cache">지금 비 안옴 (캐시)</string>
+    <string name="wind_popup_title">풍향계</string>
+    <string name="compass_popup_title">나침판</string>
+    <string name="wind_from_na">풍향(불어오는 방향): -</string>
+    <string name="wind_from_format">풍향(불어오는 방향): %1$s° (%2$s)</string>
+    <string name="compass_heading_na">방위: -</string>
+    <string name="compass_heading_format">방위: %1$d° (%2$s)</string>
+    <string name="compass_sensor_none">방위: 센서 없음</string>
+    <string name="calibrate_hint">정확도를 위해 휴대폰을 8자(∞)로 천천히 돌려 보정해 주세요.</string>
+    <string name="show_status_icon">상태 아이콘 표시</string>
+
+    <string name="ww_legend">현천코드 : 0~2(맑음), 4(연무), 10(박무), 30(안개), 40~42(비), 50~59(안개비), 60~68(비), 71~76(눈)</string>
+    <string name="ww_loading">현천 확인중…</string>
+    <string name="ww_unavailable">현천 정보없음</string>
+</resources>
