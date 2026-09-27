@@ -1,0 +1,79 @@
+package com.krdondon.read.data.repository
+
+import com.krdondon.read.data.db.TxtDocumentDao
+import com.krdondon.read.data.model.TxtDocument
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.withContext
+
+class DocumentRepository(private val dao: TxtDocumentDao) {
+
+    val allDocuments: Flow<List<TxtDocument>> = dao.getAllDocuments()
+
+    fun getDocument(id: Long): Flow<TxtDocument?> = dao.getDocumentById(id)
+
+    suspend fun getDocumentOnce(id: Long): TxtDocument? = withContext(Dispatchers.IO) {
+        dao.getDocumentByIdOnce(id)
+    }
+
+    suspend fun insertDocument(document: TxtDocument): Long = withContext(Dispatchers.IO) {
+        dao.insertDocument(document)
+    }
+
+    suspend fun updateDocument(document: TxtDocument) = withContext(Dispatchers.IO) {
+        dao.updateDocument(document.copy(updatedAt = System.currentTimeMillis()))
+    }
+
+    suspend fun updateBookmark(id: Long, charIndex: Int, sentenceIndex: Int) = withContext(Dispatchers.IO) {
+        dao.updateBookmark(id, charIndex, sentenceIndex)
+    }
+
+    suspend fun updateLastReadSentence(id: Long, sentenceIndex: Int) = withContext(Dispatchers.IO) {
+        dao.updateLastReadSentence(id, sentenceIndex)
+    }
+
+    suspend fun deleteDocument(id: Long) = withContext(Dispatchers.IO) {
+        dao.deleteDocumentById(id)
+    }
+
+    suspend fun checkAndSeedInitialData() = withContext(Dispatchers.IO) {
+        val current = dao.getAllDocuments().firstOrNull()
+        if (current.isNullOrEmpty()) {
+            val sampleContent = """
+[나무가지]
+숲 가장자리 작은 마을에 도윤이라는 소년이 살고 있었습니다. 어느 날 도윤은 길가에서 별처럼 갈라진 작은 나뭇가지를 발견했습니다.
+
+[길을 떠나다]
+도윤은 그 나뭇가지를 지팡이처럼 들고 숲으로 걸어갔습니다. 나뭇가지가 바람에 흔들릴 때마다 마치 어디론가 안내하는 것 같았습니다.
+
+[다람쥐 친구]
+첫 번째로 만난 친구는 도토리를 잔뜩 안고 있던 다람쥐였습니다. 도윤은 떨어진 도토리를 함께 주워 주었고, 다람쥐는 고마움의 표시로 숲속 지름길을 알려 주었습니다.
+
+[길 잃은 토끼]
+조금 더 깊은 숲에서 도윤은 길을 잃고 울고 있는 하얀 토끼를 만났습니다. 도윤은 나뭇가지로 풀숲을 살펴 안전한 길을 찾아 토끼를 가족에게 데려다주었습니다.
+
+[부엉이의 부탁]
+밤이 가까워지자 큰 나무 위의 부엉이가 도윤을 불렀습니다. 바람에 둥지가 흔들리고 있었고, 도윤은 나뭇가지를 이용해 떨어진 덩굴을 올려 둥지를 단단하게 고정해 주었습니다.
+
+[반짝이는 연못]
+숲 친구들은 도윤을 반짝이는 연못으로 안내했습니다. 달빛이 비치자 도윤의 나뭇가지 끝에서도 작은 빛이 피어났습니다.
+
+[나뭇가지의 비밀]
+부엉이는 말했습니다. 그 나뭇가지는 특별한 마법을 가진 것이 아니라, 다른 친구를 도우려는 마음을 가진 사람에게만 빛나는 가지라고 했습니다.
+
+[집으로]
+도윤은 다람쥐와 토끼, 부엉이에게 인사하고 집으로 돌아왔습니다. 나뭇가지는 다시 평범한 모습이 되었지만 도윤은 알았습니다. 진짜 마법은 친구를 생각하는 따뜻한 마음이라는 것을.
+            """.trimIndent()
+
+            val sampleDoc = TxtDocument(
+                title = "나무가지",
+                content = sampleContent,
+                bookmarkCharIndex = 0,
+                bookmarkSentenceIndex = 0,
+                lastReadSentenceIndex = 0
+            )
+            dao.insertDocument(sampleDoc)
+        }
+    }
+}

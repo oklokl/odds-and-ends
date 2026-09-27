@@ -1,0 +1,6 @@
+{
+  "name": "K 읽기",
+  "description": "TXT 파일 생성, 불러오기 및 안드로이드 자체 TTS 백그라운드 재생, 화면 켜짐 유지, 책갈피 및 실시간 하이라이팅 지원 리더기",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
