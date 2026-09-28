@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>개인정보 처리방침 - 상단 마이크</title>
+    <style>
+        :root {
+            --primary-color: #5c4eb7;
+            --text-color: #222222;
+            --bg-color: #fbfbfd;
+            --card-bg: #ffffff;
+            --border-color: #e5e5ea;
+            --tag-bg: #f0edf9;
+            --tag-text: #45379e;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Segoe UI", Roboto, sans-serif;
+            line-height: 1.65;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            padding: 16px;
+            font-size: 14px;
+        }
+        .container {
+            max-width: 680px;
+            margin: 0 auto;
+        }
+        .header {
+            padding: 20px 0 16px 0;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 22px;
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .date {
+            font-size: 12px;
+            color: #777777;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+        h2 {
+            font-size: 16px;
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        h2::before {
+            content: "";
+            display: inline-block;
+            width: 4px;
+            height: 14px;
+            background-color: var(--primary-color);
+            border-radius: 2px;
+            margin-right: 8px;
+        }
+        h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 12px 0 6px 0;
+            color: #333333;
+        }
+        p {
+            margin-bottom: 10px;
+            color: #444444;
+            word-break: keep-all;
+        }
+        ul {
+            padding-left: 20px;
+            margin-bottom: 10px;
+        }
+        li {
+            margin-bottom: 6px;
+            color: #444444;
+            word-break: keep-all;
+        }
+        .highlight-box {
+            background-color: var(--tag-bg);
+            color: var(--tag-text);
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-weight: 500;
+            margin-bottom: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .permission-badge {
+            display: inline-block;
+            background-color: #edeef4;
+            color: #333;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-right: 4px;
+            font-family: monospace;
+        }
+        .contact-info {
+            background-color: #f8f9fa;
+            border: 1px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 10px;
+        }
+        .contact-info a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        footer {
+            text-align: center;
+            padding: 24px 0 16px 0;
+            font-size: 11px;
+            color: #888888;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>개인정보 처리방침</h1>
+        <div class="date">최종 수정일: 2026년 3월 29일 | 적용 대상: 상단 마이크 (Microphone)</div>
+    </div>
+
+    <div class="highlight-box">
+        💡 <strong>핵심 안내:</strong> '상단 마이크' 애플리케이션은 사용자의 음성 녹음 데이터와 개인정보를 <strong>외부 서버로 수집·전송하지 않는 100% 온디바이스(로컬) 앱</strong>입니다. 모든 데이터는 이용자의 기기에만 안전하게 보관됩니다.
+    </div>
+
+    <div class="card">
+        <h2>1. 개요 및 개인정보 처리 원칙</h2>
+        <p>'상단 마이크'(이하 "앱")는 사용자의 개인정보를 매우 소중하게 생각하며, 대한민국의 「개인정보 보호법」 및 Google Play 개발자 프로그램 정책(사용자 데이터 정책)을 철저히 준수합니다.</p>
+        <p>본 방침은 앱이 어떠한 정보를 기기 내에서 처리하며, 사용 권한이 어떠한 목적으로 사용되는지 투명하게 안내하기 위해 마련되었습니다.</p>
+    </div>
+
+    <div class="card">
+        <h2>2. 처리하는 데이터 및 사용 목적</h2>
+        <p>앱은 원활한 오디오 녹음 및 관리 서비스를 위해 최소한의 기기 자원과 데이터를 기기 내부에서만 처리합니다.</p>
+        <ul>
+            <li>
+                <strong>음성 녹음 데이터 (오디오 파일)</strong><br>
+                마이크를 통해 사용자가 생성한 음성 녹음 파일(M4A, MP3)입니다. 모든 녹음 파일은 사용자의 기기 내부 저장소(앱 전용 샌드박스 저장소)에만 저장되며, 개발사를 포함한 어떠한 외부 서버나 제3자에게도 전송·공유되지 않습니다.
+            </li>
+            <li>
+                <strong>녹음 메타데이터 및 설정 정보</strong><br>
+                녹음 일시, 파일 크기, 재생 시간, 사용자가 지정한 카테고리 이름 및 앱 내 음질 설정(비트레이트, 채널, 상단/하단 마이크 위치 등)은 기기 내부 로컬 저장소(DataStore, 로컬 JSON)에만 기록됩니다.
+            </li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>3. 앱이 사용하는 기기 권한 및 목적</h2>
+        <p>앱은 핵심 기능 동작 및 사용자의 명시적 요청이 있는 경우에만 다음과 같은 시스템 권한을 요청합니다.</p>
+        <ul>
+            <li>
+                <span class="permission-badge">RECORD_AUDIO</span> <strong>마이크 권한:</strong><br>
+                상단 또는 하단 마이크를 통해 고음질 음성을 녹음하기 위해 필수적으로 사용됩니다. 사용자가 녹음 버튼을 눌러 녹음을 진행하는 동안에만 마이크가 활성화됩니다.
+            </li>
+            <li>
+                <span class="permission-badge">READ_PHONE_STATE</span>
+                <span class="permission-badge">ANSWER_PHONE_CALLS</span> <strong>전화 상태 및 제어 권한:</strong><br>
+                설정 메뉴에서 <strong>'녹음 중 전화 차단'</strong> 옵션을 사용자가 직접 켰을 때만 선택적으로 요청됩니다. 녹음 도중 전화 수신 벨소리로 인해 녹음이 중단되거나 방해받지 않도록 착신 전화를 자동으로 거절하는 용도로만 사용되며, <u>통화 내용을 녹음하거나 통화 기록, 상대방 번호 등의 정보를 수집·저장하지 않습니다.</u>
+            </li>
+            <li>
+                <span class="permission-badge">POST_NOTIFICATIONS</span> <strong>알림 권한:</strong><br>
+                앱이 백그라운드에서 녹음 중일 때 현재 녹음 상태 및 경과 시간을 표시하고, 상단 알림창에서 즉시 일시정지/정지할 수 있는 컨트롤을 제공하기 위해 사용됩니다.
+            </li>
+            <li>
+                <span class="permission-badge">BLUETOOTH_CONNECT</span> <strong>블루투스 권한:</strong><br>
+                사용자가 '블루투스 마이크 사용' 옵션을 선택한 경우, 무선 블루투스 마이크나 헤드셋을 통해 원격 음성 녹음을 지원하기 위해 사용됩니다.
+            </li>
+            <li>
+                <span class="permission-badge">FOREGROUND_SERVICE</span> <strong>포그라운드 서비스:</strong><br>
+                화면이 꺼지거나 다른 앱을 사용하는 동안에도 녹음이 비정상 종료되지 않고 안정적으로 유지되도록 하기 위해 사용됩니다.
+            </li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>4. 저장 공간 및 파일 내보내기 정책</h2>
+        <p>Android 최신 보안 및 범위 지정 저장소(Scoped Storage) 정책을 엄격히 준수합니다.</p>
+        <ul>
+            <li><strong>기본 저장:</strong> 모든 녹음 파일은 기기 내 앱 전용 안전 디렉터리에 격리 보관되어 다른 외부 앱이 무단으로 접근할 수 없습니다.</li>
+            <li><strong>공개 Music 폴더 내보내기:</strong> 사용자가 파일 관리자나 PC 연결을 통해 녹음 파일(M4A, MP3)을 자유롭게 백업하거나 공유할 수 있도록, 사용자의 명시적인 '내보내기' 명령 시에만 Android MediaStore를 통해 공용 음악 디렉터리(<code>Music/krdondon_mic</code>)로 안전하게 복사됩니다.</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>5. 제3자 제공 및 외부 전송 여부</h2>
+        <p>본 앱은 광고 플랫폼 SDK, 외부 추적/분석(Analytics) 도구 등을 일절 탑재하지 않았습니다.</p>
+        <div class="highlight-box" style="background-color: #f7f9fa; color: #444; border: 1px solid #e0e0e0;">
+            ✔️ 제3자 데이터 제공: <strong>없음 (None)</strong><br>
+            ✔️ 외부 분석/트래커 탑재: <strong>없음 (None)</strong><br>
+            ✔️ 광고 네트워크 연동: <strong>없음 (None)</strong>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>6. 데이터의 보유 및 파기 절차</h2>
+        <ul>
+            <li>사용자가 앱 내에서 녹음 파일을 삭제하거나 '휴지통 비우기'를 수행하는 즉시 기기 저장소에서 파일이 영구 파기됩니다.</li>
+            <li>사용자가 애플리케이션을 삭제(제거)할 경우, 앱 전용 저장소에 보관된 모든 데이터와 설정 파일은 Android OS에 의해 즉시 영구 삭제됩니다.</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>7. 아동의 개인정보 보호</h2>
+        <p>본 앱은 만 13세 미만(또는 관할 지역 법률에서 규정한 연령)의 아동을 포함한 모든 이용자로부터 개인식별정보를 온라인으로 수집하지 않습니다. 아동에게 유해한 어떠한 콘텐츠도 포함하지 않습니다.</p>
+    </div>
+
+    <div class="card">
+        <h2>8. 개인정보 보호 책임자 및 문의처</h2>
+        <p>앱 이용 중 개인정보 처리 및 권한 사용과 관련하여 궁금하신 사항이 있으시면 아래 연락처로 언제든지 문의해 주시기 바랍니다.</p>
+        <div class="contact-info">
+            • <strong>담당자:</strong> 상단 마이크 개발팀<br>
+            • <strong>이메일 문의:</strong> <a href="mailto:don4444@duck.com">don4444@duck.com</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>9. 개인정보 처리방침 변경</h2>
+        <p>본 방침은 관련 법령, 보안 기술의 변경 또는 앱 기능 업데이트에 따라 내용이 추가·수정될 수 있습니다. 중요한 변경 사항이 있을 경우 앱 내 공지 또는 업데이트 버전을 통해 투명하게 고지하겠습니다.</p>
+    </div>
+
+    <footer>
+        © 2026 상단 마이크 (Microphone). All rights reserved.
+    </footer>
+</div>
+</body>
+</html>
