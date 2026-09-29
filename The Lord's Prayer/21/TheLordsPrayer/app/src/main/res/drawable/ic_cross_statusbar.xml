@@ -1,0 +1,14 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- 세로 기둥 -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M10.8,3 H13.2 A0.8,0.8 0 0 1 14,3.8 V20.2 A0.8,0.8 0 0 1 13.2,21 H10.8 A0.8,0.8 0 0 1 10,20.2 V3.8 A0.8,0.8 0 0 1 10.8,3 Z" />
+    <!-- 가로 대 -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M5.8,8 H18.2 A0.8,0.8 0 0 1 19,8.8 V11.2 A0.8,0.8 0 0 1 18.2,12 H5.8 A0.8,0.8 0 0 1 5,11.2 V8.8 A0.8,0.8 0 0 1 5.8,8 Z" />
+</vector>

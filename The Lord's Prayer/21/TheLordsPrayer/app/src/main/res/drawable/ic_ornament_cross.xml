@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="24dp"
+    android:viewportWidth="200"
+    android:viewportHeight="24">
+    <!-- 좌측 라인 -->
+    <path
+        android:fillColor="#CCA859"
+        android:pathData="M24,11.5 h56 v1 h-56 z"/>
+    <!-- 좌측 마름모 장식 -->
+    <path
+        android:fillColor="#CCA859"
+        android:pathData="M84,12 L87,9 L90,12 L87,15 Z"/>
+    <!-- 중앙 십자가 -->
+    <path
+        android:fillColor="#CCA859"
+        android:pathData="M98.5,4 h3 v5 h5 v3 h-5 v9 h-3 v-9 h-5 v-3 h5 z"/>
+    <!-- 우측 마름모 장식 -->
+    <path
+        android:fillColor="#CCA859"
+        android:pathData="M110,12 L113,9 L116,12 L113,15 Z"/>
+    <!-- 우측 라인 -->
+    <path
+        android:fillColor="#CCA859"
+        android:pathData="M120,11.5 h56 v1 h-56 z"/>
+</vector>

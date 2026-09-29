@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">주기도문</string>
+    <string name="notification_channel_name">음악 재생 서비스</string>
+    <string name="notification_title">주님의 기도</string>
+    <string name="notification_text">재생 중</string>
+    <string name="notification_play_action">재생</string>
+    <string name="notification_pause_action">일시정지</string>
+    <string name="notification_stop_action">정지</string>
+    <string name="btn_keep_screen_on">유지</string>
+    <string name="btn_release_screen_on">해제</string>
+    <string name="btn_voice_change">음성 변경</string>
+    <string name="btn_play">재생</string>
+    <string name="btn_stop">정지</string>
+    <string name="prayer_part1">하늘에 계신 우리 아버지,\n아버지의 이름이 거룩히 빛나시며\n아버지의 나라가 오시며\n아버지의 뜻이 하늘에서와 같이\n땅에서도 이루어지소서!</string>
+    <string name="prayer_part2">오늘 저희에게 일용할 양식을 주시고\n저희에게 잘못한 이를 저희가 용서하오니\n저희 죄를 용서하시고\n저희를 유혹에 빠지지 않게 하시고\n악에서 구하소서.</string>
+    <string name="prayer_part3">아멘.</string>
+</resources>
