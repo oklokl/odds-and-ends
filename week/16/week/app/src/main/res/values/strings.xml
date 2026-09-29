@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AM PM 요일</string>
+    <string name="widget_description">시간과 날짜를 표시하는 작은 위젯</string>
+
+    <!-- 상태바 알림 관련 문자열 (UTF-8 인코딩 보장) -->
+    <string name="status_bar_settings_title">상태바 알림 설정</string>
+    <string name="btn_am_pm">오전·오후</string>
+    <string name="btn_am_pm_dismiss">오전·오후 해제</string>
+    <string name="btn_day_of_week">요일</string>
+    <string name="btn_day_of_week_dismiss">요일 해제</string>
+    <string name="status_bar_guide">상단바 및 알림창에 오전/오후 및 요일을 표시합니다.\n해제하려면 위 해제 버튼을 눌러주세요.</string>
+    <string name="notification_guide_text">요일 앱입니다. 해제하려면 요일 앱에서 하세요.</string>
+</resources>
