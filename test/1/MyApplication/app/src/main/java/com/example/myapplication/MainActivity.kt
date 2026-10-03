@@ -6,6 +6,11 @@ import android.view.SoundEffectConstants
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -36,10 +41,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -50,6 +60,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
@@ -59,6 +70,13 @@ data class TodoItem(
     val id: String = UUID.randomUUID().toString(),
     val text: String,
     val isDone: Boolean = false
+)
+
+// 원형 물결 파동(Circular Ripple Wave) 애니메이션 데이터 모델
+data class WaterRipple(
+    val id: Long = System.nanoTime(),
+    val center: Offset,
+    val progress: Animatable<Float, AnimationVector1D> = Animatable(0f)
 )
 
 // SharedPreferences 데이터 저장/불러오기를 담당하는 헬퍼 객체
@@ -127,11 +145,28 @@ class MainActivity : ComponentActivity() {
 fun TodoListScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val view = LocalView.current // 효과음 재생을 위한 View 참조
+    val coroutineScope = rememberCoroutineScope()
     var inputText by remember { mutableStateOf("") }
+
+    // 연못 물결 파동 애니메이션 리스트 관리
+    val waterRipples = remember { mutableStateListOf<WaterRipple>() }
 
     val todoList = remember {
         mutableStateListOf<TodoItem>().apply {
             addAll(TodoRepository.loadTodoList(context))
+        }
+    }
+
+    // 🌊 터치 위치에서 물결 파동 생성 및 애니메이션 실행
+    fun spawnWaterRipple(center: Offset) {
+        val ripple = WaterRipple(center = center)
+        waterRipples.add(ripple)
+        coroutineScope.launch {
+            ripple.progress.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 800, easing = LinearOutSlowInEasing)
+            )
+            waterRipples.remove(ripple)
         }
     }
 
@@ -202,7 +237,20 @@ fun TodoListScreen(modifier: Modifier = Modifier) {
     }
 
     Box(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                // 🌊 터치 지점 감지: 버튼, 리스트, 배경 등 화면 어디든 터치 시 위치(x, y)에 물결 파동을 발생시킴
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        if (event.type == PointerEventType.Press) {
+                            val position = event.changes.first().position
+                            spawnWaterRipple(position)
+                        }
+                    }
+                }
+            }
     ) {
         // 배경 이미지 설정
         Image(
@@ -218,6 +266,9 @@ fun TodoListScreen(modifier: Modifier = Modifier) {
                 .fillMaxSize()
                 .background(Color.White.copy(alpha = 0.35f))
         )
+
+        // 🌊 원형 물결 파동(Circular Ripple Wave) 캔버스 레이어
+        WaterRippleOverlay(ripples = waterRipples)
 
         Column(
             modifier = Modifier
@@ -333,6 +384,53 @@ fun TodoListScreen(modifier: Modifier = Modifier) {
     }
 }
 
+// 🌊 원형 물결 파동(Circular Ripple Wave)을 그리는 커스텀 캔버스 컴포넌트
+@Composable
+fun WaterRippleOverlay(
+    ripples: List<WaterRipple>,
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier = modifier.fillMaxSize()) {
+        val maxRadius = size.maxDimension * 0.45f // 화면 크기에 비례하여 크게 확산
+
+        ripples.forEach { ripple ->
+            val p = ripple.progress.value
+            val currentRadius = p * maxRadius
+            val alpha = (1f - p).coerceIn(0f, 1f)
+
+            if (alpha > 0f) {
+                // 1. 메인 외곽 파동 고리 (Circular Ripple Ring)
+                drawCircle(
+                    color = Color(0xFF7B5233).copy(alpha = alpha * 0.5f),
+                    radius = currentRadius,
+                    center = ripple.center,
+                    style = Stroke(width = (5.dp.toPx() * (1f - p * 0.4f)).coerceAtLeast(1f))
+                )
+
+                // 2. 보조 내측 밝은 흰색 파동 고리 (Secondary Water Ring)
+                if (p > 0.1f) {
+                    val innerP = (p - 0.1f) / 0.9f
+                    val innerRadius = currentRadius * 0.72f
+                    val innerAlpha = (1f - innerP).coerceIn(0f, 1f)
+                    drawCircle(
+                        color = Color.White.copy(alpha = innerAlpha * 0.6f),
+                        radius = innerRadius,
+                        center = ripple.center,
+                        style = Stroke(width = (3.dp.toPx() * (1f - innerP * 0.4f)).coerceAtLeast(1f))
+                    )
+                }
+
+                // 3. 중심 은은한 잔물결 확산 (Center Glow Effect)
+                drawCircle(
+                    color = Color(0xFFA07855).copy(alpha = alpha * 0.25f),
+                    radius = currentRadius * 0.35f,
+                    center = ripple.center
+                )
+            }
+        }
+    }
+}
+
 @Composable
 fun TodoItemRow(
     todoItem: TodoItem,
@@ -340,7 +438,6 @@ fun TodoItemRow(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Card 자체에 onClick을 지정하여 카드 전체 터치 시 물결(Ripple Effect) 애니메이션이 퍼지도록 설정
     Card(
         onClick = onToggleDone,
         modifier = modifier.fillMaxWidth(),
