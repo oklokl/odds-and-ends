@@ -1,0 +1,6 @@
+{
+  "name": "Three-Body Orbit",
+  "description": "Interactive Three-Body chaotic multi-star cosmic art simulation with gravitational impulse interactions, luminous orbital trails, and chaotic dynamics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
