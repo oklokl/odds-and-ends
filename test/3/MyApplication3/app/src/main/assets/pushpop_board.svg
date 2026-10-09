@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1600" viewBox="0 0 960 1600" role="img" aria-labelledby="title desc">
+  <title id="title">Push-pop 3×3 recessed-hole game board</title>
+  <desc id="desc">A rounded cream board on a blue-lavender gradient background, with nine recessed circular wells arranged in three rows and three columns.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9bcaff"/><stop offset=".52" stop-color="#b7c4ff"/><stop offset="1" stop-color="#e6bfff"/></linearGradient>
+    <radialGradient id="boardFill" cx="35%" cy="18%" r="90%"><stop offset="0" stop-color="#fffdf6"/><stop offset=".65" stop-color="#f8eddf"/><stop offset="1" stop-color="#e6d4c5"/></radialGradient>
+    <filter id="boardShadow" x="-20%" y="-20%" width="140%" height="150%"><feGaussianBlur in="SourceAlpha" stdDeviation="24"/><feOffset dy="22"/><feComponentTransfer><feFuncA type="linear" slope=".34"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <radialGradient id="well" cx="35%" cy="28%" r="78%"><stop offset="0" stop-color="#735b4f"/><stop offset=".56" stop-color="#a98c79"/><stop offset=".78" stop-color="#5b4338"/><stop offset=".9" stop-color="#fdf1df"/><stop offset="1" stop-color="#d4bca7"/></radialGradient>
+    <g id="hole"><circle r="112" fill="#cdb6a1" opacity=".7"/><circle r="105" fill="url(#well)"/><circle r="83" fill="#35251f" opacity=".75"/><circle r="78" fill="#f7e5d0" opacity=".28"/></g>
+  </defs>
+  <rect width="960" height="1600" fill="url(#bg)"/>
+  <ellipse cx="480" cy="1370" rx="360" ry="54" fill="#6655a8" opacity=".12"/>
+  <g filter="url(#boardShadow)"><rect x="84" y="225" width="792" height="1150" rx="100" fill="url(#boardFill)" stroke="#fff9ef" stroke-width="5"/><rect x="101" y="242" width="758" height="1116" rx="83" fill="none" stroke="#d9c8b9" stroke-opacity=".45" stroke-width="3"/></g>
+  <!-- Each well is centered on the matching 3×3 button grid: x=246,480,714; y=465,800,1135 -->
+  <g transform="translate(246 465)"><use href="#hole"/></g>
+  <g transform="translate(480 465)"><use href="#hole"/></g>
+  <g transform="translate(714 465)"><use href="#hole"/></g>
+  <g transform="translate(246 800)"><use href="#hole"/></g>
+  <g transform="translate(480 800)"><use href="#hole"/></g>
+  <g transform="translate(714 800)"><use href="#hole"/></g>
+  <g transform="translate(246 1135)"><use href="#hole"/></g>
+  <g transform="translate(480 1135)"><use href="#hole"/></g>
+  <g transform="translate(714 1135)"><use href="#hole"/></g>
+</svg>
