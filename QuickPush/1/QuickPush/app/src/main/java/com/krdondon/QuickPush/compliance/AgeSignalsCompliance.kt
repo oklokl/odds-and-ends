@@ -1,4 +1,4 @@
-package com.krdondon.QuickPush.compliance
+package com.krdondon.quickpush.compliance
 
 import android.app.Activity
 import android.util.Log

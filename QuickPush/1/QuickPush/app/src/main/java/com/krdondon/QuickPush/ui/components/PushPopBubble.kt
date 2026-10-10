@@ -1,4 +1,4 @@
-package com.krdondon.QuickPush.ui.components
+package com.krdondon.quickpush.ui.components
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -39,9 +39,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import com.krdondon.QuickPush.R
-import com.krdondon.QuickPush.model.AnimationIntensity
-import com.krdondon.QuickPush.model.BubbleItem
+import com.krdondon.quickpush.R
+import com.krdondon.quickpush.model.AnimationIntensity
+import com.krdondon.quickpush.model.BubbleItem
 import kotlinx.coroutines.launch
 import kotlin.math.sin
 

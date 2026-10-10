@@ -1,6 +1,4 @@
-@file:Suppress("UNUSED_PARAMETER")
-
-package com.krdondon.QuickPush.ui.components
+package com.krdondon.quickpush.ui.components
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -16,8 +14,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
-import com.krdondon.QuickPush.model.FloatingScore
-import com.krdondon.QuickPush.model.Particle
+import com.krdondon.quickpush.model.FloatingScore
+import com.krdondon.quickpush.model.Particle
 
 @Composable
 fun FloatingTextAndParticleOverlay(

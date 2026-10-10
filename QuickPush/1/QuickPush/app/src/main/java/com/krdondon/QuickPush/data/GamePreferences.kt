@@ -1,11 +1,11 @@
-package com.krdondon.QuickPush.data
+package com.krdondon.quickpush.data
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.krdondon.QuickPush.model.AnimationIntensity
-import com.krdondon.QuickPush.model.BubbleTheme
-import com.krdondon.QuickPush.model.ConsoleColor
-import com.krdondon.QuickPush.model.SoundStyle
+import com.krdondon.quickpush.model.AnimationIntensity
+import com.krdondon.quickpush.model.BubbleTheme
+import com.krdondon.quickpush.model.ConsoleColor
+import com.krdondon.quickpush.model.SoundStyle
 
 class GamePreferences(context: Context) {
 

@@ -1,6 +1,4 @@
-@file:Suppress("PackageNaming", "PackageName")
-
-package com.krdondon.QuickPush.ui.components
+package com.krdondon.quickpush.ui.components
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -58,12 +56,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.krdondon.QuickPush.model.AnimationIntensity
-import com.krdondon.QuickPush.model.BubbleItem
-import com.krdondon.QuickPush.model.ConsoleColor
-import com.krdondon.QuickPush.model.FloatingScore
-import com.krdondon.QuickPush.model.GridDimension
-import com.krdondon.QuickPush.model.Particle
+import com.krdondon.quickpush.model.AnimationIntensity
+import com.krdondon.quickpush.model.BubbleItem
+import com.krdondon.quickpush.model.ConsoleColor
+import com.krdondon.quickpush.model.FloatingScore
+import com.krdondon.quickpush.model.GridDimension
+import com.krdondon.quickpush.model.Particle
 import kotlinx.coroutines.launch
 
 @Composable

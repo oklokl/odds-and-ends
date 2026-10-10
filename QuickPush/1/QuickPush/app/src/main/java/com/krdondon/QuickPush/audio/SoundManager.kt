@@ -1,10 +1,10 @@
-package com.krdondon.QuickPush.audio
+package com.krdondon.quickpush.audio
 
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.SoundPool
 import android.util.Log
-import com.krdondon.QuickPush.model.SoundStyle
+import com.krdondon.quickpush.model.SoundStyle
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.ByteBuffer

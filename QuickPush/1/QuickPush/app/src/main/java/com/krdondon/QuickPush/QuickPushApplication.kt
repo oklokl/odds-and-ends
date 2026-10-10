@@ -1,4 +1,4 @@
-package com.krdondon.QuickPush
+package com.krdondon.quickpush
 
 import android.app.Application
 import android.content.ComponentCallbacks2

@@ -1,4 +1,4 @@
-package com.krdondon.QuickPush
+package com.krdondon.quickpush
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -8,10 +8,10 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.krdondon.QuickPush.compliance.AgeSignalsCompliance
-import com.krdondon.QuickPush.ui.PushPopGameScreen
-import com.krdondon.QuickPush.ui.PushPopGameViewModel
-import com.krdondon.QuickPush.ui.theme.MyApplicationTheme
+import com.krdondon.quickpush.compliance.AgeSignalsCompliance
+import com.krdondon.quickpush.ui.PushPopGameScreen
+import com.krdondon.quickpush.ui.PushPopGameViewModel
+import com.krdondon.quickpush.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
 

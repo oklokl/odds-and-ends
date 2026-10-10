@@ -1,4 +1,4 @@
-package com.krdondon.QuickPush.ui.dialogs
+package com.krdondon.quickpush.ui.dialogs
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -43,17 +43,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.krdondon.QuickPush.R
-import com.krdondon.QuickPush.model.GameMode
-import com.krdondon.QuickPush.ui.PushPopUiState
-import com.krdondon.QuickPush.ui.theme.CoralAlert
-import com.krdondon.QuickPush.ui.theme.GoldStar
-import com.krdondon.QuickPush.ui.theme.PastelMint
-import com.krdondon.QuickPush.ui.theme.PastelPinkContainer
-import com.krdondon.QuickPush.ui.theme.PastelPinkPrimary
-import com.krdondon.QuickPush.ui.theme.TextMuted
-import com.krdondon.QuickPush.ui.theme.TextPrimary
-import com.krdondon.QuickPush.ui.theme.TextSecondary
+import com.krdondon.quickpush.R
+import com.krdondon.quickpush.model.GameMode
+import com.krdondon.quickpush.ui.PushPopUiState
+import com.krdondon.quickpush.ui.theme.CoralAlert
+import com.krdondon.quickpush.ui.theme.GoldStar
+import com.krdondon.quickpush.ui.theme.PastelMint
+import com.krdondon.quickpush.ui.theme.PastelPinkContainer
+import com.krdondon.quickpush.ui.theme.PastelPinkPrimary
+import com.krdondon.quickpush.ui.theme.TextMuted
+import com.krdondon.quickpush.ui.theme.TextPrimary
+import com.krdondon.quickpush.ui.theme.TextSecondary
 
 @Composable
 fun LevelUpDialog(

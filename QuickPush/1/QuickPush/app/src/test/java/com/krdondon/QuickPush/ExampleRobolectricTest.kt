@@ -1,10 +1,11 @@
-package com.krdondon.QuickPush
+package com.krdondon.quickpush
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import com.krdondon.QuickPush.data.GamePreferences
-import com.krdondon.QuickPush.model.GameMode
-import com.krdondon.QuickPush.model.GridCalculator
+import com.krdondon.quickpush.R
+import com.krdondon.quickpush.data.GamePreferences
+import com.krdondon.quickpush.model.GameMode
+import com.krdondon.quickpush.model.GridCalculator
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -45,9 +46,9 @@ class ExampleRobolectricTest {
     assertEquals(320, prefs.getTimeAttackHighScore(60))
 
     // Console color skin verification
-    assertEquals(com.krdondon.QuickPush.model.ConsoleColor.PINK_BUNNY, prefs.consoleColor)
-    prefs.consoleColor = com.krdondon.QuickPush.model.ConsoleColor.MINT_BUNNY
-    assertEquals(com.krdondon.QuickPush.model.ConsoleColor.MINT_BUNNY, prefs.consoleColor)
+    assertEquals(com.krdondon.quickpush.model.ConsoleColor.PINK_BUNNY, prefs.consoleColor)
+    prefs.consoleColor = com.krdondon.quickpush.model.ConsoleColor.MINT_BUNNY
+    assertEquals(com.krdondon.quickpush.model.ConsoleColor.MINT_BUNNY, prefs.consoleColor)
   }
 
   @Test

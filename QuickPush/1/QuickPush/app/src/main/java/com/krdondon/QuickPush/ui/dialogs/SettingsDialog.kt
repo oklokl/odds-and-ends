@@ -1,4 +1,4 @@
-package com.krdondon.QuickPush.ui.dialogs
+package com.krdondon.quickpush.ui.dialogs
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -41,17 +41,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.krdondon.QuickPush.model.AnimationIntensity
-import com.krdondon.QuickPush.model.BubbleTheme
-import com.krdondon.QuickPush.model.ConsoleColor
-import com.krdondon.QuickPush.model.SoundStyle
-import com.krdondon.QuickPush.ui.PushPopUiState
-import com.krdondon.QuickPush.ui.theme.CoralAlert
-import com.krdondon.QuickPush.ui.theme.PastelPinkContainer
-import com.krdondon.QuickPush.ui.theme.PastelPinkPrimary
-import com.krdondon.QuickPush.ui.theme.TextMuted
-import com.krdondon.QuickPush.ui.theme.TextPrimary
-import com.krdondon.QuickPush.ui.theme.TextSecondary
+import com.krdondon.quickpush.model.AnimationIntensity
+import com.krdondon.quickpush.model.BubbleTheme
+import com.krdondon.quickpush.model.ConsoleColor
+import com.krdondon.quickpush.model.SoundStyle
+import com.krdondon.quickpush.ui.PushPopUiState
+import com.krdondon.quickpush.ui.theme.CoralAlert
+import com.krdondon.quickpush.ui.theme.PastelPinkContainer
+import com.krdondon.quickpush.ui.theme.PastelPinkPrimary
+import com.krdondon.quickpush.ui.theme.TextMuted
+import com.krdondon.quickpush.ui.theme.TextPrimary
+import com.krdondon.quickpush.ui.theme.TextSecondary
 
 @Composable
 fun SettingsDialog(

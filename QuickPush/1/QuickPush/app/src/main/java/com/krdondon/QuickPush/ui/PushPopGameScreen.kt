@@ -1,6 +1,4 @@
-@file:Suppress("PackageNaming", "PackageName")
-
-package com.krdondon.QuickPush.ui
+package com.krdondon.quickpush.ui
 
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
@@ -53,20 +51,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.krdondon.QuickPush.model.GameMode
-import com.krdondon.QuickPush.ui.components.BunnyQuickPushConsole
-import com.krdondon.QuickPush.ui.components.GameTopBar
-import com.krdondon.QuickPush.ui.components.ScoreStatusCard
-import com.krdondon.QuickPush.ui.dialogs.ConfirmResetDialog
-import com.krdondon.QuickPush.ui.dialogs.LevelUpDialog
-import com.krdondon.QuickPush.ui.dialogs.ModeSelectorDialog
-import com.krdondon.QuickPush.ui.dialogs.PauseDialog
-import com.krdondon.QuickPush.ui.dialogs.PatternFailDialog
-import com.krdondon.QuickPush.ui.dialogs.SettingsDialog
-import com.krdondon.QuickPush.ui.dialogs.TimeAttackResultDialog
-import com.krdondon.QuickPush.ui.theme.PastelBackground
-import com.krdondon.QuickPush.ui.theme.PastelPinkPrimary
-import com.krdondon.QuickPush.ui.theme.TextPrimary
+import com.krdondon.quickpush.model.GameMode
+import com.krdondon.quickpush.ui.components.BunnyQuickPushConsole
+import com.krdondon.quickpush.ui.components.GameTopBar
+import com.krdondon.quickpush.ui.components.ScoreStatusCard
+import com.krdondon.quickpush.ui.dialogs.ConfirmResetDialog
+import com.krdondon.quickpush.ui.dialogs.LevelUpDialog
+import com.krdondon.quickpush.ui.dialogs.ModeSelectorDialog
+import com.krdondon.quickpush.ui.dialogs.PauseDialog
+import com.krdondon.quickpush.ui.dialogs.PatternFailDialog
+import com.krdondon.quickpush.ui.dialogs.SettingsDialog
+import com.krdondon.quickpush.ui.dialogs.TimeAttackResultDialog
+import com.krdondon.quickpush.ui.theme.PastelBackground
+import com.krdondon.quickpush.ui.theme.PastelPinkPrimary
+import com.krdondon.quickpush.ui.theme.TextPrimary
 
 @Composable
 fun PushPopGameScreen(

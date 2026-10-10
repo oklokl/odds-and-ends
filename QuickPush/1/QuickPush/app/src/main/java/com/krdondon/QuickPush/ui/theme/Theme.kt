@@ -1,4 +1,4 @@
-package com.krdondon.QuickPush.ui.theme
+package com.krdondon.quickpush.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme

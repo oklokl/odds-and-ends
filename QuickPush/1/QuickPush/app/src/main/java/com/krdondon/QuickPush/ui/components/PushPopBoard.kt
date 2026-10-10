@@ -1,4 +1,4 @@
-package com.krdondon.QuickPush.ui.components
+package com.krdondon.quickpush.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -29,15 +29,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.krdondon.QuickPush.R
-import com.krdondon.QuickPush.model.AnimationIntensity
-import com.krdondon.QuickPush.model.BubbleItem
-import com.krdondon.QuickPush.model.FloatingScore
-import com.krdondon.QuickPush.model.GridDimension
-import com.krdondon.QuickPush.model.Particle
-import com.krdondon.QuickPush.ui.theme.BoardBackground
-import com.krdondon.QuickPush.ui.theme.BoardBorder
-import com.krdondon.QuickPush.ui.theme.BoardShadow
+import com.krdondon.quickpush.R
+import com.krdondon.quickpush.model.AnimationIntensity
+import com.krdondon.quickpush.model.BubbleItem
+import com.krdondon.quickpush.model.FloatingScore
+import com.krdondon.quickpush.model.GridDimension
+import com.krdondon.quickpush.model.Particle
+import com.krdondon.quickpush.ui.theme.BoardBackground
+import com.krdondon.quickpush.ui.theme.BoardBorder
+import com.krdondon.quickpush.ui.theme.BoardShadow
 
 @Composable
 fun PushPopBoard(

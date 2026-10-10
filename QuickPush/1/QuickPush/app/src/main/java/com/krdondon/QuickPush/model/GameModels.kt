@@ -1,4 +1,4 @@
-package com.krdondon.QuickPush.model
+package com.krdondon.quickpush.model
 
 import androidx.compose.ui.graphics.Color
 

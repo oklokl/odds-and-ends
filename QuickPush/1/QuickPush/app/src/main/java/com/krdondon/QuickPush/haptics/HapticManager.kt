@@ -1,4 +1,4 @@
-package com.krdondon.QuickPush.haptics
+package com.krdondon.quickpush.haptics
 
 import android.content.Context
 import android.os.Build

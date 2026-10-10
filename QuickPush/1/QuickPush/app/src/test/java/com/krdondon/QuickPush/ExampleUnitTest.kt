@@ -1,4 +1,4 @@
-package com.krdondon.QuickPush
+package com.krdondon.quickpush
 
 import org.junit.Assert.*
 import org.junit.Test

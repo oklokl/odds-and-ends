@@ -1,4 +1,4 @@
-package com.krdondon.QuickPush.ui.components
+package com.krdondon.quickpush.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -31,10 +31,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.krdondon.QuickPush.model.GameMode
-import com.krdondon.QuickPush.ui.theme.PastelPinkContainer
-import com.krdondon.QuickPush.ui.theme.PastelPinkPrimary
-import com.krdondon.QuickPush.ui.theme.TextPrimary
+import com.krdondon.quickpush.model.GameMode
+import com.krdondon.quickpush.ui.theme.PastelPinkContainer
+import com.krdondon.quickpush.ui.theme.PastelPinkPrimary
+import com.krdondon.quickpush.ui.theme.TextPrimary
 
 @Composable
 fun GameTopBar(

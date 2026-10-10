@@ -1,4 +1,4 @@
-package com.krdondon.QuickPush.ui.theme
+package com.krdondon.quickpush.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
