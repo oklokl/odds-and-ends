@@ -1,0 +1,6 @@
+{
+  "name": "K 푸쉬팝",
+  "description": "벌집 구조 퀵푸시 피젯 토이 게임 - 미션 모드와 무한 모드",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
