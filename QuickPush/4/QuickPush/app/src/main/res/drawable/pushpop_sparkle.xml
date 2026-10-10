@@ -1,0 +1,120 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="512dp"
+    android:height="512dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+
+    <!-- Sparkle Group 1 -->
+    <group android:translateX="256" android:translateY="98">
+        <path
+            android:fillColor="#FFFFFF"
+            android:strokeColor="#F8A9C3"
+            android:strokeWidth="1.4"
+            android:pathData="M0,-13 C2.5,-3.5 3.5,-2.5 13,0 C3.5,2.5 2.5,3.5 0,13 C-2.5,3.5 -3.5,2.5 -13,0 C-3.5,-2.5 -2.5,-3.5 0,-13 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M2.3,0 A2.3,2.3 0,1,1 -2.3,0 A2.3,2.3 0,1,1 2.3,0" />
+    </group>
+
+    <!-- Sparkle Group 2 -->
+    <group android:translateX="365" android:translateY="153">
+        <path
+            android:fillColor="#FFFDFE"
+            android:strokeColor="#F6A0BC"
+            android:strokeWidth="1"
+            android:pathData="M0,-7 C1.4,-1.8 1.8,-1.4 7,0 C1.8,1.4 1.4,1.8 0,7 C-1.4,1.8 -1.8,1.4 -7,0 C-1.8,-1.4 -1.4,-1.8 0,-7 Z" />
+    </group>
+
+    <!-- Sparkle Group 3 -->
+    <group android:translateX="402" android:translateY="256" android:scaleX="0.72" android:scaleY="0.72">
+        <path
+            android:fillColor="#FFFFFF"
+            android:strokeColor="#F8A9C3"
+            android:strokeWidth="1.4"
+            android:pathData="M0,-13 C2.5,-3.5 3.5,-2.5 13,0 C3.5,2.5 2.5,3.5 0,13 C-2.5,3.5 -3.5,2.5 -13,0 C-3.5,-2.5 -2.5,-3.5 0,-13 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M2.3,0 A2.3,2.3 0,1,1 -2.3,0 A2.3,2.3 0,1,1 2.3,0" />
+    </group>
+
+    <!-- Sparkle Group 4 -->
+    <group android:translateX="359" android:translateY="365">
+        <path
+            android:fillColor="#FFFDFE"
+            android:strokeColor="#F6A0BC"
+            android:strokeWidth="1"
+            android:pathData="M0,-7 C1.4,-1.8 1.8,-1.4 7,0 C1.8,1.4 1.4,1.8 0,7 C-1.4,1.8 -1.8,1.4 -7,0 C-1.8,-1.4 -1.4,-1.8 0,-7 Z" />
+    </group>
+
+    <!-- Sparkle Group 5 -->
+    <group android:translateX="256" android:translateY="413" android:scaleX="0.65" android:scaleY="0.65">
+        <path
+            android:fillColor="#FFFFFF"
+            android:strokeColor="#F8A9C3"
+            android:strokeWidth="1.4"
+            android:pathData="M0,-13 C2.5,-3.5 3.5,-2.5 13,0 C3.5,2.5 2.5,3.5 0,13 C-2.5,3.5 -3.5,2.5 -13,0 C-3.5,-2.5 -2.5,-3.5 0,-13 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M2.3,0 A2.3,2.3 0,1,1 -2.3,0 A2.3,2.3 0,1,1 2.3,0" />
+    </group>
+
+    <!-- Sparkle Group 6 -->
+    <group android:translateX="146" android:translateY="359">
+        <path
+            android:fillColor="#FFFDFE"
+            android:strokeColor="#F6A0BC"
+            android:strokeWidth="1"
+            android:pathData="M0,-7 C1.4,-1.8 1.8,-1.4 7,0 C1.8,1.4 1.4,1.8 0,7 C-1.4,1.8 -1.8,1.4 -7,0 C-1.8,-1.4 -1.4,-1.8 0,-7 Z" />
+    </group>
+
+    <!-- Sparkle Group 7 -->
+    <group android:translateX="110" android:translateY="256" android:scaleX="0.68" android:scaleY="0.68">
+        <path
+            android:fillColor="#FFFFFF"
+            android:strokeColor="#F8A9C3"
+            android:strokeWidth="1.4"
+            android:pathData="M0,-13 C2.5,-3.5 3.5,-2.5 13,0 C3.5,2.5 2.5,3.5 0,13 C-2.5,3.5 -3.5,2.5 -13,0 C-3.5,-2.5 -2.5,-3.5 0,-13 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M2.3,0 A2.3,2.3 0,1,1 -2.3,0 A2.3,2.3 0,1,1 2.3,0" />
+    </group>
+
+    <!-- Sparkle Group 8 -->
+    <group android:translateX="151" android:translateY="151">
+        <path
+            android:fillColor="#FFFDFE"
+            android:strokeColor="#F6A0BC"
+            android:strokeWidth="1"
+            android:pathData="M0,-7 C1.4,-1.8 1.8,-1.4 7,0 C1.8,1.4 1.4,1.8 0,7 C-1.4,1.8 -1.8,1.4 -7,0 C-1.8,-1.4 -1.4,-1.8 0,-7 Z" />
+    </group>
+
+    <!-- Additional Twinkles -->
+    <group android:translateX="315" android:translateY="111" android:alpha="0.8">
+        <path
+            android:fillColor="#FFFDFE"
+            android:strokeColor="#F6A0BC"
+            android:strokeWidth="1"
+            android:pathData="M0,-7 C1.4,-1.8 1.8,-1.4 7,0 C1.8,1.4 1.4,1.8 0,7 C-1.4,1.8 -1.8,1.4 -7,0 C-1.8,-1.4 -1.4,-1.8 0,-7 Z" />
+    </group>
+    <group android:translateX="392" android:translateY="316" android:alpha="0.7">
+        <path
+            android:fillColor="#FFFDFE"
+            android:strokeColor="#F6A0BC"
+            android:strokeWidth="1"
+            android:pathData="M0,-7 C1.4,-1.8 1.8,-1.4 7,0 C1.8,1.4 1.4,1.8 0,7 C-1.4,1.8 -1.8,1.4 -7,0 C-1.8,-1.4 -1.4,-1.8 0,-7 Z" />
+    </group>
+    <group android:translateX="196" android:translateY="410" android:alpha="0.75">
+        <path
+            android:fillColor="#FFFDFE"
+            android:strokeColor="#F6A0BC"
+            android:strokeWidth="1"
+            android:pathData="M0,-7 C1.4,-1.8 1.8,-1.4 7,0 C1.8,1.4 1.4,1.8 0,7 C-1.4,1.8 -1.8,1.4 -7,0 C-1.8,-1.4 -1.4,-1.8 0,-7 Z" />
+    </group>
+    <group android:translateX="119" android:translateY="204" android:alpha="0.7">
+        <path
+            android:fillColor="#FFFDFE"
+            android:strokeColor="#F6A0BC"
+            android:strokeWidth="1"
+            android:pathData="M0,-7 C1.4,-1.8 1.8,-1.4 7,0 C1.8,1.4 1.4,1.8 0,7 C-1.4,1.8 -1.8,1.4 -7,0 C-1.8,-1.4 -1.4,-1.8 0,-7 Z" />
+    </group>
+</vector>
