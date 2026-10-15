@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>Breathing Red Circle Button Outline</title>
+  <desc>Animated red circular outline with a fully transparent center, designed to highlight a round game button.</desc>
+  <defs>
+    <linearGradient id="redStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff858e"/>
+      <stop offset="48%" stop-color="#ff172b"/>
+      <stop offset="100%" stop-color="#d80022"/>
+    </linearGradient>
+    <filter id="redGlow" x="-45%" y="-45%" width="190%" height="190%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feFlood flood-color="#ff243b" flood-opacity=".8" result="glowColor"/>
+      <feComposite in="glowColor" in2="blur" operator="in" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Circle only: no fill, so the center stays transparent. -->
+  <circle cx="256" cy="256" r="218"
+          fill="none" stroke="#ff263b" stroke-width="18" opacity=".18" filter="url(#redGlow)">
+    <animate attributeName="opacity" values=".08;.48;.08" dur="1.6s" repeatCount="indefinite"/>
+    <animate attributeName="r" values="216;222;216" dur="1.6s" repeatCount="indefinite"/>
+    <animate attributeName="stroke-width" values="12;20;12" dur="1.6s" repeatCount="indefinite"/>
+  </circle>
+
+  <circle cx="256" cy="256" r="218"
+          fill="none" stroke="url(#redStroke)" stroke-width="8">
+    <animate attributeName="stroke-width" values="6;11;6" dur="1.6s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values=".7;1;.7" dur="1.6s" repeatCount="indefinite"/>
+  </circle>
+
+  <circle cx="256" cy="256" r="207"
+          fill="none" stroke="#ff9aa4" stroke-width="2.5" opacity=".58">
+    <animate attributeName="opacity" values=".2;.82;.2" dur="1.6s" repeatCount="indefinite"/>
+  </circle>
+</svg>
