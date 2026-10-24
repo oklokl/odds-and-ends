@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Glow rays -->
+    <path
+        android:fillColor="#FFA000"
+        android:pathData="M11.2,1 L12.8,1 L12.8,3.5 L11.2,3.5 Z M4.2,4.2 L5.6,2.8 L7.4,4.6 L6,6 Z M18,6 L16.6,4.6 L18.4,2.8 L19.8,4.2 Z M1,11.2 L3.5,11.2 L3.5,12.8 L1,12.8 Z M20.5,11.2 L23,11.2 L23,12.8 L20.5,12.8 Z" />
+    <!-- Bulb Glass Outline -->
+    <path
+        android:fillColor="#FF8F00"
+        android:pathData="M12,4 C8.13,4 5,7.13 5,11 C5,13.38 6.19,15.47 8,16.74 L8,19 C8,19.55 8.45,20 9,20 L15,20 C15.55,20 16,19.55 16,19 L16,16.74 C17.81,15.47 19,13.38 19,11 C19,7.13 15.87,4 12,4 Z" />
+    <!-- Bulb Glass Fill -->
+    <path
+        android:fillColor="#FFD54F"
+        android:pathData="M12,5.2 C8.8,5.2 6.2,7.8 6.2,11 C6.2,13 7.2,14.7 8.8,15.8 L9.2,16.1 L9.2,18.8 L14.8,18.8 L14.8,16.1 L15.2,15.8 C16.8,14.7 17.8,13 17.8,11 C17.8,7.8 15.2,5.2 12,5.2 Z" />
+    <!-- Bulb Inner Filament/Glow -->
+    <path
+        android:fillColor="#FFF9C4"
+        android:pathData="M10,8 C10,6.9 10.9,6 12,6 C13.1,6 14,6.9 14,8 C14,9.2 13,10 12.5,11 L11.5,11 C11,10 10,9.2 10,8 Z" />
+    <!-- Screw Base -->
+    <path
+        android:fillColor="#78909C"
+        android:pathData="M9,20.5 L15,20.5 L14.5,22 C14.3,22.6 13.7,23 13,23 L11,23 C10.3,23 9.7,22.6 9.5,22 Z" />
+</vector>
