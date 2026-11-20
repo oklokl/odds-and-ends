@@ -2,6 +2,27 @@
 
 ## 최근 점검 및 개선 사항
 
+### v42.0 — Edge-to-Edge 상태바 수정 · 위치/GPS 안내창 디자인 개선 · 위치 조회/행정구역 판별 최적화
+- **상단 상태바 가시성 및 인셋 겹침 해결 (`MainActivity.kt`, `themes.xml`, `AndroidManifest.xml`)**:
+  - `enableEdgeToEdge(statusBarStyle = SystemBarStyle.light(...), navigationBarStyle = SystemBarStyle.light(...))` 및 `WindowInsetsControllerCompat`의 `isAppearanceLightStatusBars = true` 적용으로 상단 시계·Wi-Fi·통신·배터리 아이콘 시인성 확보
+  - `rootLayout`에 `WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()` 4면 인셋을 적용해 상단 텍스트와 상태바/펀치홀 겹침 해결
+  - `Theme.Wweather`(`Theme.MaterialComponents.Light.NoActionBar` 기반 + 고대비 `ThemeOverlay.Wweather.AlertDialog`)를 `AndroidManifest.xml`에 적용해 다크 모드 시 텍스트 대비 깨짐 방지
+- **GPS/위치 안내창 및 메인 화면 디자인 개선**:
+  - 저대비 연한 녹색 다이얼로그 버튼 대신 전용 레이아웃(`dialog_location_prompt.xml`)과 고대비 에메랄드 녹색(`#1B7A3D`) 버튼·카드형 안내창 적용
+  - `activity_main.xml`을 카드형 레이아웃(`bg_weather_card.xml`), 둥근 모서리 이모지 카드(`MaterialCardView`), 통일된 `MaterialButton`, 고대비 타이포그래피(`colors.xml`)로 개편
+  - 로딩 다이얼로그(`showLoading`)에 **취소** 버튼 및 뒤로가기 취소 핸들러 추가
+- **위치 조회 속도 개선 및 Google Play `targetSdk = 37` 정책 준수**:
+  - `targetSdk = 37` 최소 권한 원칙에 맞춰 `ACCESS_COARSE_LOCATION` 전경 1회 조회 유지
+  - `CurrentLocationRequest`(`PRIORITY_BALANCED_POWER_ACCURACY`, `setMaxUpdateAgeMillis(0L)`, 5초 상한) → `NETWORK_PROVIDER`(3.5초) → 최근 위치 폴백 구조로 단축해 실기기 약 58ms 활성 위치 수신 확인
+  - 시/구청 단일 중심점 거리 매칭 대신 `Geocoder`(1.5초 타임아웃) 우선 행정구역 판별(`resolveAreaName`) + CSV 폴백 적용 및 마지막 행정구역명(`PREF_LAST_AREA`) 저장
+- **안정성 및 문서 현행화**:
+  - `AlarmScheduler.cancel()`에서 기존 알람이 없을 때 불필요한 `PendingIntent` 생성 제거
+  - `saveCurrentScreenImage()`가 상태바/내비게이션바 인셋 공백을 포함하지 않도록 `18dp` 고정 여백 및 `bg_screen` 배경 적용
+  - 화면 회전 복원(`restoreUiState`) 시 `시도중…` 상태 고착 방지
+  - 한국 법령·Google Play 정책 기준 한글 [개인정보 처리방침](Privacy%20Policy.txt)([PRIVACY_POLICY.md](PRIVACY_POLICY.md)) 및 [GOOGLE_PLAY_POLICY.md](GOOGLE_PLAY_POLICY.md) 최신화
+
+---
+
 ### Google Play 정책·폼팩터 호환성 및 백그라운드 완전 차단
 - **Play Console 하드웨어 제한 경고(`android.hardware.screen.portrait`) 해결**:
   - `AndroidManifest.xml`에서 `android:screenOrientation="sensorPortrait"` 제거
