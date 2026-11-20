@@ -1,0 +1,33 @@
+<resources>
+    <!-- 기본 Material 색상 -->
+    <color name="purple_200">#BB86FC</color>
+    <color name="purple_500">#6200EE</color>
+    <color name="purple_700">#3700B3</color>
+    <color name="teal_200">#03DAC5</color>
+    <color name="teal_700">#018786</color>
+
+    <!-- 앱 화면/카드/텍스트 팔레트 -->
+    <color name="bg_screen">#F4F6F9</color>
+    <color name="bg_card">#FFFFFF</color>
+    <color name="border_card">#E2E8F0</color>
+    <color name="text_primary">#111827</color>
+    <color name="text_secondary">#4B5563</color>
+    <color name="text_muted">#6B7280</color>
+
+    <!-- 액션 & 상태 강조 색상 (높은 명도 대비) -->
+    <color name="brand_green">#1B7A3D</color>
+    <color name="brand_green_dark">#145E2E</color>
+    <color name="brand_green_soft">#E7F5EC</color>
+    <color name="brand_blue">#0284C7</color>
+    <color name="brand_blue_dark">#0369A1</color>
+    <color name="brand_purple">#6D28D9</color>
+    <color name="brand_red">#DC2626</color>
+    <color name="btn_secondary_bg">#EDF2F7</color>
+
+    <!-- 하단 방위 풍향계 텍스트 색상 -->
+    <color name="value_red">#D32F2F</color>
+
+    <!-- 흑/백 -->
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+</resources>
