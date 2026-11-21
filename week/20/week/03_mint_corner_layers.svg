@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1080" viewBox="0 0 1440 1080">
+  <title>Mint Android widget background</title>
+  <desc>Scalable decorative rounded mint card; translucent curves remain at the edges to leave center free for a clock and calendar.</desc>
+  <defs>
+    <clipPath id="card-clip"><rect x="0" y="0" width="1440" height="1080" rx="112" ry="112"/></clipPath>
+  </defs>
+  <g clip-path="url(#card-clip)">
+    
+    <rect width="1440" height="1080" fill="#D7FDEA"/>
+    <!-- more defined corner leaves, space stays open around date/time -->
+    <path d="M 0,0 H 702 C 586,150 462,218 260,258 C 147,281 63,332 0,391 Z" fill="#BAF6DC"/>
+    <path d="M 0,0 H 455 C 388,110 288,150 167,181 C 101,197 46,223 0,268 Z" fill="#76DAB6" fill-opacity=".78"/>
+    <path d="M 0,0 H 208 C 148,86 67,117 0,143 Z" fill="#5CCBA6" fill-opacity=".50"/>
+    <path d="M 1078,0 H 1440 V 343 C 1327,308 1217,244 1161,160 C 1115,96 1099,49 1078,0 Z" fill="#9BEACA" fill-opacity=".66"/>
+    <path d="M 1208,0 H 1440 V 209 C 1322,178 1265,103 1208,0 Z" fill="#77DDB8" fill-opacity=".32"/>
+    <path d="M 0,810 C 136,807 222,831 303,901 C 411,988 472,1027 573,1080 H 0 Z" fill="#AAEFD3" fill-opacity=".76"/>
+    <path d="M 0,961 C 110,938 209,979 307,1080 H 0 Z" fill="#7FDFBB" fill-opacity=".55"/>
+    <path d="M 1440,535 C 1325,593 1281,635 1228,728 C 1146,884 1009,970 810,1080 H 1440 Z" fill="#B0F2D8" fill-opacity=".84"/>
+    <path d="M 1440,727 C 1311,770 1260,865 1170,928 C 1085,990 981,1033 892,1080 H 1440 Z" fill="#73DDB7" fill-opacity=".63"/>
+    <path d="M 1440,904 C 1300,939 1241,1030 1141,1080 H 1440 Z" fill="#52CDA5" fill-opacity=".41"/>
+
+  </g>
+</svg>

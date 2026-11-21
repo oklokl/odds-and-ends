@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">AM PM 요일</string>
+    <string name="widget_description">시간과 날짜를 표시하는 작은 위젯</string>
+</resources>

@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_container_bg"
+    android:clipToOutline="true"
+    tools:targetApi="s">
+
+    <ImageView
+        android:id="@+id/widget_background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
+        android:src="@drawable/bg_widget_solid_mint" />
+
+    <LinearLayout
+        android:id="@+id/widget_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="6dp">
+
+        <LinearLayout
+            android:id="@+id/widget_time_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:gravity="center_horizontal"
+            android:orientation="horizontal">
+
+            <TextClock
+                android:id="@+id/widget_ampm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:fontFamily="sans-serif"
+                android:format12Hour="a "
+                android:format24Hour="a "
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:shadowColor="#40000000"
+                android:shadowDx="2"
+                android:shadowDy="4"
+                android:shadowRadius="5"
+                android:singleLine="true"
+                android:textColor="#000000"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextClock
+                android:id="@+id/widget_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:fontFamily="sans-serif"
+                android:format12Hour="h:mm"
+                android:format24Hour="H:mm"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:shadowColor="#40000000"
+                android:shadowDx="2"
+                android:shadowDy="4"
+                android:shadowRadius="5"
+                android:singleLine="true"
+                android:textColor="#000000"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#33000000"
+            android:text="" />
+
+        <LinearLayout
+            android:id="@+id/widget_date_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:gravity="center_horizontal"
+            android:orientation="horizontal">
+
+            <TextClock
+                android:id="@+id/widget_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:fontFamily="sans-serif"
+                android:format12Hour="MM.dd "
+                android:format24Hour="MM.dd "
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:shadowColor="#40000000"
+                android:shadowDx="2"
+                android:shadowDy="4"
+                android:shadowRadius="5"
+                android:singleLine="true"
+                android:textColor="#000000"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextClock
+                android:id="@+id/widget_day"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:fontFamily="sans-serif"
+                android:format12Hour="E"
+                android:format24Hour="E"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:shadowColor="#40000000"
+                android:shadowDx="2"
+                android:shadowDy="4"
+                android:shadowRadius="5"
+                android:singleLine="true"
+                android:textColor="#000000"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</FrameLayout>
