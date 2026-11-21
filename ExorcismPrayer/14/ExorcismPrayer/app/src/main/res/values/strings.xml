@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">구마경</string>
+    <string name="notification_channel_name">기도 재생</string>
+    <string name="notification_channel_desc">구마 기도 오디오 재생 알림 및 컨트롤</string>
+</resources>
