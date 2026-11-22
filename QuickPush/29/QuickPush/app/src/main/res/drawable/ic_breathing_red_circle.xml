@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+
+    <!-- Outer Glow Circle (matches breathing_red_circle_button.svg layer 1) -->
+    <path
+        android:pathData="M 256,38 A 218,218 0 1 1 255.9,38 Z"
+        android:strokeColor="#FF263B"
+        android:strokeAlpha="0.38"
+        android:strokeWidth="42" />
+
+    <!-- Main Red Gradient Circle (matches breathing_red_circle_button.svg layer 2) -->
+    <path
+        android:pathData="M 256,38 A 218,218 0 1 1 255.9,38 Z"
+        android:strokeColor="#FF172B"
+        android:strokeWidth="28" />
+
+    <!-- Inner Highlight Circle (matches breathing_red_circle_button.svg layer 3) -->
+    <path
+        android:pathData="M 256,49 A 207,207 0 1 1 255.9,49 Z"
+        android:strokeColor="#FF9AA4"
+        android:strokeAlpha="0.75"
+        android:strokeWidth="6" />
+</vector>
