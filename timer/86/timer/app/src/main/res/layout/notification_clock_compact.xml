@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  시계 알림(접힌 상태)
+  - 접힌 알림의 세로 높이는 매우 제한적이므로 반드시 한 줄만 사용한다.
+  - 제목과 TextClock 기반 현재 시각(24시간)을 가로로 나란히 표시한다.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:baselineAligned="true"
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp">
+
+    <TextView
+        android:id="@+id/clock_notification_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="10dp"
+        android:text="시계"
+        android:textStyle="bold"
+        android:textSize="15sp"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <TextClock
+        android:id="@+id/clock_notification_text_clock"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:format12Hour="HH:mm:ss"
+        android:format24Hour="HH:mm:ss"
+        android:gravity="start|center_vertical"
+        android:textStyle="bold"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="16sp"
+        android:autoSizeMaxTextSize="24sp"
+        android:autoSizeStepGranularity="1sp"
+        android:textSize="24sp"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+</LinearLayout>

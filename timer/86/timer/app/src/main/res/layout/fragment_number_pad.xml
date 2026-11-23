@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/timer_bg"
+    android:clipToPadding="false"
+    android:fillViewport="true"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="24dp">
+
+        <!-- 상단 디스플레이 카드 -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Timer.SurfaceCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingStart="16dp"
+                android:paddingTop="14dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTomorrow"
+                        style="@style/Timer.TonalPillButton"
+                        android:layout_width="112dp"
+                        android:layout_height="40dp"
+                        android:text="@string/label_tomorrow"
+                        android:textSize="13sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAmPm"
+                        style="@style/Timer.OutlinedPillButton"
+                        android:layout_width="112dp"
+                        android:layout_height="40dp"
+                        android:layout_marginStart="10dp"
+                        android:text="@string/label_am"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/nowOnPadText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:fontFamily="monospace"
+                    android:fontFeatureSettings="tnum"
+                    android:text="@string/now_on_pad_text"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+
+                <LinearLayout
+                    android:layout_width="276dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/lblH"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="@string/label_hour"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/lblM"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="@string/label_minute"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/lblS"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="@string/label_second"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/lblMS"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="@string/label_thousandth"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/inputTimeText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:autoSizeMaxTextSize="40sp"
+                    android:autoSizeMinTextSize="26sp"
+                    android:autoSizeStepGranularity="1sp"
+                    android:autoSizeTextType="uniform"
+                    android:fontFamily="monospace"
+                    android:fontFeatureSettings="tnum"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:text="@string/zero_hhmmss_mmmm"
+                    android:textColor="@color/text_primary"
+                    android:textSize="38sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 숫자패드 그리드 -->
+        <GridLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:columnCount="3"
+            android:rowCount="4"
+            android:useDefaultMargins="true">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn1"
+                style="@style/Timer.OutlinedPillButton"
+                android:layout_width="82dp"
+                android:layout_height="72dp"
+                android:text="@string/digit_1"
+                android:textSize="24sp"
+                app:cornerRadius="36dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn2"
+                style="@style/Timer.OutlinedPillButton"
+                android:layout_width="82dp"
+                android:layout_height="72dp"
+                android:text="@string/digit_2"
+                android:textSize="24sp"
+                app:cornerRadius="36dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn3"
+                style="@style/Timer.OutlinedPillButton"
+                android:layout_width="82dp"
+                android:layout_height="72dp"
+                android:text="@string/digit_3"
+                android:textSize="24sp"
+                app:cornerRadius="36dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn4"
+                style="@style/Timer.OutlinedPillButton"
+                android:layout_width="82dp"
+                android:layout_height="72dp"
+                android:text="@string/digit_4"
+                android:textSize="24sp"
+                app:cornerRadius="36dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn5"
+                style="@style/Timer.OutlinedPillButton"
+                android:layout_width="82dp"
+                android:layout_height="72dp"
+                android:text="@string/digit_5"
+                android:textSize="24sp"
+                app:cornerRadius="36dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn6"
+                style="@style/Timer.OutlinedPillButton"
+                android:layout_width="82dp"
+                android:layout_height="72dp"
+                android:text="@string/digit_6"
+                android:textSize="24sp"
+                app:cornerRadius="36dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn7"
+                style="@style/Timer.OutlinedPillButton"
+                android:layout_width="82dp"
+                android:layout_height="72dp"
+                android:text="@string/digit_7"
+                android:textSize="24sp"
+                app:cornerRadius="36dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn8"
+                style="@style/Timer.OutlinedPillButton"
+                android:layout_width="82dp"
+                android:layout_height="72dp"
+                android:text="@string/digit_8"
+                android:textSize="24sp"
+                app:cornerRadius="36dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn9"
+                style="@style/Timer.OutlinedPillButton"
+                android:layout_width="82dp"
+                android:layout_height="72dp"
+                android:text="@string/digit_9"
+                android:textSize="24sp"
+                app:cornerRadius="36dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDelete"
+                style="@style/Timer.TonalPillButton"
+                android:layout_width="82dp"
+                android:layout_height="72dp"
+                android:text="@string/arrow_back"
+                android:textColor="@color/accent_danger"
+                android:textSize="22sp"
+                app:backgroundTint="@color/accent_danger_container"
+                app:cornerRadius="36dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn0"
+                style="@style/Timer.OutlinedPillButton"
+                android:layout_width="82dp"
+                android:layout_height="72dp"
+                android:text="@string/digit_0"
+                android:textSize="24sp"
+                app:cornerRadius="36dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnNext"
+                style="@style/Timer.PrimaryPillButton"
+                android:layout_width="82dp"
+                android:layout_height="72dp"
+                android:text="@string/btn_next"
+                android:textSize="16sp"
+                app:cornerRadius="36dp" />
+        </GridLayout>
+
+        <!-- 빠른 시간 프리셋 바 -->
+        <HorizontalScrollView
+            android:id="@+id/presetScrollView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:overScrollMode="never"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPreset5"
+                    style="@style/Timer.TonalPillButton"
+                    android:layout_width="84dp"
+                    android:layout_height="46dp"
+                    android:layout_marginEnd="8dp"
+                    android:text="5분" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPreset10"
+                    style="@style/Timer.TonalPillButton"
+                    android:layout_width="84dp"
+                    android:layout_height="46dp"
+                    android:layout_marginEnd="8dp"
+                    android:text="10분" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPreset20"
+                    style="@style/Timer.TonalPillButton"
+                    android:layout_width="84dp"
+                    android:layout_height="46dp"
+                    android:layout_marginEnd="8dp"
+                    android:text="20분" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPreset30"
+                    style="@style/Timer.TonalPillButton"
+                    android:layout_width="84dp"
+                    android:layout_height="46dp"
+                    android:layout_marginEnd="8dp"
+                    android:text="30분" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPreset40"
+                    style="@style/Timer.TonalPillButton"
+                    android:layout_width="84dp"
+                    android:layout_height="46dp"
+                    android:layout_marginEnd="8dp"
+                    android:text="40분" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPreset50"
+                    style="@style/Timer.TonalPillButton"
+                    android:layout_width="84dp"
+                    android:layout_height="46dp"
+                    android:text="50분" />
+            </LinearLayout>
+        </HorizontalScrollView>
+    </LinearLayout>
+</ScrollView>
