@@ -1,0 +1,507 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  폰 '표시 크기/글꼴 크기'를 올렸을 때 하단 UI가 잘리는 문제를 해결하기 위해
+  메인 화면을 스크롤 가능하게 유지하며, 카드형 레이아웃과 명확한 명도 대비를 적용했습니다.
+
+  rootLayout id는 기존 코드(MainActivity)에서 인셋/스크린샷 캡처 등에 사용하므로 그대로 유지합니다.
+-->
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_screen"
+    android:clipToPadding="false"
+    android:fillViewport="true"
+    android:paddingStart="18dp"
+    android:paddingTop="14dp"
+    android:paddingEnd="18dp"
+    android:paddingBottom="20dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <!-- 상단 기준 정보 & 현재 지역/기압/날씨 요약 카드 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_weather_card"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingStart="16dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="14dp">
+
+            <!-- 상태/로딩/기준 시각 텍스트 -->
+            <TextView
+                android:id="@+id/statusText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:lineSpacingExtra="2dp"
+                android:text="@string/press_reconnect"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp" />
+
+            <!-- 지역명 -->
+            <TextView
+                android:id="@+id/regionText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text=""
+                android:textColor="@color/text_primary"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <!-- 기압 값 -->
+            <TextView
+                android:id="@+id/pressureText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/pressure_default"
+                android:textColor="@color/text_primary"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <!-- 오늘 강수 / 날씨 -->
+            <TextView
+                android:id="@+id/weatherText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/weather_unknown"
+                android:textColor="@color/brand_blue"
+                android:textSize="19sp"
+                android:textStyle="bold" />
+
+            <!-- 현천(WW1) 코드 -->
+            <TextView
+                android:id="@+id/wwNowText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/ww_unavailable"
+                android:textColor="@color/value_red"
+                android:textSize="19sp"
+                android:textStyle="bold" />
+
+            <!-- 현천(WW1) 범례: 가로 스크롤 -->
+            <HorizontalScrollView
+                android:id="@+id/wwLegendScroll"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="10dp"
+                android:overScrollMode="never"
+                android:scrollbars="horizontal">
+
+                <TextView
+                    android:id="@+id/wwLegendText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="none"
+                    android:singleLine="true"
+                    android:text="@string/ww_legend"
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp" />
+            </HorizontalScrollView>
+
+            <!-- 상태 이모지 (둥근 모서리 클리핑) -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="140dp"
+                android:layout_height="140dp"
+                app:cardBackgroundColor="@color/black"
+                app:cardCornerRadius="22dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/border_card"
+                app:strokeWidth="1dp">
+
+                <ImageView
+                    android:id="@+id/emojiView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@string/emoji_description"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/normal" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 얼굴 아래 기압 상태 -->
+            <TextView
+                android:id="@+id/conditionText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text=""
+                android:textColor="@color/text_primary"
+                android:textSize="21sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- 현재 상태 지표 카드 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_weather_card"
+            android:orientation="vertical"
+            android:paddingStart="12dp"
+            android:paddingTop="14dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="12dp">
+
+            <LinearLayout
+                android:id="@+id/metricsRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:baselineAligned="false"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <!-- 현재 온도 -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tempLabelText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/temp_label"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tempValueText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/temp_default"
+                        android:textColor="@color/text_primary"
+                        android:textSize="21sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- 풍향 -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/windDirLabelText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/wind_dir_label"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/windDirValueText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/value_default"
+                        android:textColor="@color/text_primary"
+                        android:textSize="21sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- 풍속 -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/windSpeedLabelText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/wind_speed_label"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/windSpeedValueText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/value_default"
+                        android:textColor="@color/text_primary"
+                        android:textSize="21sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- 습도 -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/humidityLabelText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/humidity_label"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/humidityValueText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/value_default"
+                        android:textColor="@color/text_primary"
+                        android:textSize="21sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 풍향 참고 -->
+            <TextView
+                android:id="@+id/windLegendText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:gravity="center"
+                android:text="@string/wind_legend"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- 풍향 UI / 지역 열기 버튼 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:baselineAligned="false"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/windUiButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:text="@string/wind_ui_button"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                app:backgroundTint="@color/brand_blue"
+                app:cornerRadius="10dp"
+                tools:ignore="ButtonStyle" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/settingsButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:text="@string/open_settings"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                app:backgroundTint="@color/brand_purple"
+                app:cornerRadius="10dp"
+                tools:ignore="ButtonStyle" />
+        </LinearLayout>
+
+        <!-- 재접속 / 로그 / 제공처 전환 버튼 + 상태 텍스트 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:baselineAligned="false"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/retryButton"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:backgroundTint="@null"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:minWidth="0dp"
+                    android:paddingLeft="4dp"
+                    android:paddingRight="4dp"
+                    android:text="@string/retry_button"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    tools:ignore="ButtonStyle" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/logButton"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:minWidth="0dp"
+                    android:paddingLeft="4dp"
+                    android:paddingRight="4dp"
+                    android:text="@string/log_button"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/brand_purple"
+                    app:cornerRadius="10dp"
+                    tools:ignore="ButtonStyle" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/sourceToggleButton"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:minWidth="0dp"
+                    android:paddingLeft="2dp"
+                    android:paddingRight="2dp"
+                    android:text="@string/provider_to_open"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/brand_purple"
+                    app:cornerRadius="10dp"
+                    tools:ignore="ButtonStyle" />
+            </LinearLayout>
+
+            <!-- 상태 텍스트: 시작 → 시도중… → 성공/실패 -->
+            <TextView
+                android:id="@+id/retryStatusText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/status_start"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- 현재 날짜/시간 (폰 내부 시간) -->
+        <TextView
+            android:id="@+id/timeText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/time_box"
+            android:gravity="center"
+            android:text="@string/current_time_default"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp" />
+
+        <!-- 메인 화면 이미지 저장/공유 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:baselineAligned="false"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/saveImageButton"
+                android:layout_width="0dp"
+                android:layout_height="46dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:text="@string/save_image"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                app:backgroundTint="@color/brand_green"
+                app:cornerRadius="10dp"
+                tools:ignore="ButtonStyle" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/shareImageButton"
+                android:layout_width="0dp"
+                android:layout_height="46dp"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:enabled="false"
+                android:text="@string/share_image"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                app:backgroundTint="@color/brand_purple"
+                app:cornerRadius="10dp"
+                tools:ignore="ButtonStyle" />
+        </LinearLayout>
+
+        <!-- 언어 전환(EN/KR) · 온도 단위 전환(°F/°C) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:baselineAligned="false"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/languageToggleButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="42dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:text="@string/lang_toggle_button"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/bg_card"
+                app:cornerRadius="10dp"
+                app:strokeColor="@color/border_card"
+                app:strokeWidth="1dp"
+                tools:ignore="ButtonStyle" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/tempUnitToggleButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="42dp"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:text="@string/temp_unit_to_f"
+                android:textColor="@color/brand_blue_dark"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/bg_card"
+                app:cornerRadius="10dp"
+                app:strokeColor="@color/border_card"
+                app:strokeWidth="1dp"
+                tools:ignore="ButtonStyle" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/sourceFooterText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:text="@string/provider_footer_kma"
+            android:textColor="@color/text_muted"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+</androidx.core.widget.NestedScrollView>
