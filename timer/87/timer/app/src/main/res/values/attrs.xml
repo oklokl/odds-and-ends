@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="appBgColor" format="color" />
+    <attr name="appSurfaceCard" format="color" />
+    <attr name="appSurfaceCardAlt" format="color" />
+    <attr name="appBottomBarColor" format="color" />
+
+    <attr name="appAccentPrimary" format="color" />
+    <attr name="appOnAccentPrimary" format="color" />
+    <attr name="appPrimaryContainer" format="color" />
+    <attr name="appOnPrimaryContainer" format="color" />
+
+    <attr name="appAccentSecondary" format="color" />
+    <attr name="appSecondaryContainer" format="color" />
+    <attr name="appOnSecondaryContainer" format="color" />
+
+    <attr name="appDanger" format="color" />
+    <attr name="appDangerContainer" format="color" />
+
+    <attr name="appTextPrimary" format="color" />
+    <attr name="appTextSecondary" format="color" />
+    <attr name="appTextTertiary" format="color" />
+
+    <attr name="appDivider" format="color" />
+    <attr name="appStrokeColor" format="color" />
+    <attr name="appPrimaryStrokeColor" format="color" />
+    <attr name="appPrimaryStrokeWidth" format="dimension" />
+
+    <attr name="appTabIndicatorBg" format="color" />
+    <attr name="appTabActiveText" format="color" />
+    <attr name="appTabInactiveText" format="color" />
+</resources>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 1. 오리지널 다크 (시스템 다크 모드 자동 대응) -->
+    <style name="Theme.Timer" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/accent_primary</item>
+        <item name="colorOnPrimary">@color/on_accent_primary</item>
+        <item name="colorPrimaryContainer">@color/accent_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/on_primary_container</item>
+
+        <item name="colorSecondary">@color/accent_secondary</item>
+        <item name="colorOnSecondary">@color/on_accent_primary</item>
+        <item name="colorSecondaryContainer">@color/accent_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/on_secondary_container</item>
+
+        <item name="android:colorBackground">@color/timer_bg</item>
+        <item name="colorSurface">@color/surface_card</item>
+        <item name="colorSurfaceContainer">@color/surface_bottom_bar</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
+        <item name="colorOutline">@color/divider_subtle</item>
+
+        <item name="appBgColor">@color/timer_bg</item>
+        <item name="appSurfaceCard">@color/surface_card</item>
+        <item name="appSurfaceCardAlt">@color/surface_card_alt</item>
+        <item name="appBottomBarColor">@color/surface_bottom_bar</item>
+        <item name="appAccentPrimary">@color/accent_primary</item>
+        <item name="appOnAccentPrimary">@color/on_accent_primary</item>
+        <item name="appPrimaryContainer">@color/accent_primary_container</item>
+        <item name="appOnPrimaryContainer">@color/on_primary_container</item>
+        <item name="appAccentSecondary">@color/accent_secondary</item>
+        <item name="appSecondaryContainer">@color/accent_secondary_container</item>
+        <item name="appOnSecondaryContainer">@color/on_secondary_container</item>
+        <item name="appDanger">@color/accent_danger</item>
+        <item name="appDangerContainer">@color/accent_danger_container</item>
+        <item name="appTextPrimary">@color/text_primary</item>
+        <item name="appTextSecondary">@color/text_secondary</item>
+        <item name="appTextTertiary">@color/text_tertiary</item>
+        <item name="appDivider">@color/divider_subtle</item>
+        <item name="appStrokeColor">@color/divider_subtle</item>
+        <item name="appPrimaryStrokeColor">@android:color/transparent</item>
+        <item name="appPrimaryStrokeWidth">0dp</item>
+        <item name="appTabIndicatorBg">@color/tab_indicator_bg</item>
+        <item name="appTabActiveText">@color/tab_active_text</item>
+        <item name="appTabInactiveText">@color/tab_inactive_text</item>
+    </style>
+</resources>
