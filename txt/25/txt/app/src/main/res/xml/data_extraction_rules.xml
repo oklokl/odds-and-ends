@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- 클라우드 백업 규칙 -->
+    </cloud-backup>
+</data-extraction-rules>
