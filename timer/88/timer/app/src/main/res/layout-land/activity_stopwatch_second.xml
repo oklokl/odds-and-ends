@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/appBgColor"
+    android:paddingStart="12dp"
+    android:paddingTop="10dp"
+    android:paddingEnd="12dp"
+    android:paddingBottom="10dp">
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineTimeBottom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.69" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineLapStart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.68" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/secondDisplayCard"
+        style="@style/Timer.SurfaceCard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="8dp"
+        app:cardCornerRadius="26dp"
+        app:cardElevation="2dp"
+        app:layout_constraintBottom_toTopOf="@id/guidelineTimeBottom"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/secondStopwatchText"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:autoSizeMaxTextSize="104sp"
+            android:autoSizeMinTextSize="24sp"
+            android:autoSizeStepGranularity="1sp"
+            android:autoSizeTextType="uniform"
+            android:ellipsize="none"
+            android:fontFamily="monospace"
+            android:fontFeatureSettings="tnum"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:paddingStart="14dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="8dp"
+            android:shadowColor="#66000000"
+            android:shadowDx="0"
+            android:shadowDy="5"
+            android:shadowRadius="6"
+            android:text="000:00:00.000"
+            android:textColor="?attr/appTextPrimary"
+            android:textStyle="bold" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/secondControlsArea"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginEnd="10dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/guidelineLapStart"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/guidelineTimeBottom">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSecondStartStop"
+            style="@style/Timer.SecondStopwatchPrimaryButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="6dp"
+            android:autoSizeMaxTextSize="14sp"
+            android:autoSizeMinTextSize="10sp"
+            android:autoSizeStepGranularity="1sp"
+            android:autoSizeTextType="uniform"
+            android:maxLines="1"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:text="시작"
+            app:cornerRadius="20dp"
+            app:layout_constraintBottom_toTopOf="@id/btnSecondClock"
+            app:layout_constraintEnd_toStartOf="@id/btnSecondReset"
+            app:layout_constraintHorizontal_weight="1.05"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_chainStyle="packed" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSecondReset"
+            style="@style/Timer.SecondStopwatchSecondaryButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="6dp"
+            android:autoSizeMaxTextSize="14sp"
+            android:autoSizeMinTextSize="10sp"
+            android:autoSizeStepGranularity="1sp"
+            android:autoSizeTextType="uniform"
+            android:enabled="false"
+            android:maxLines="1"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:text="초기화"
+            app:cornerRadius="20dp"
+            app:layout_constraintBottom_toBottomOf="@id/btnSecondStartStop"
+            app:layout_constraintEnd_toStartOf="@id/btnSecondSwitch"
+            app:layout_constraintHorizontal_weight="1"
+            app:layout_constraintStart_toEndOf="@id/btnSecondStartStop"
+            app:layout_constraintTop_toTopOf="@id/btnSecondStartStop" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSecondSwitch"
+            style="@style/Timer.SecondStopwatchSecondaryButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="6dp"
+            android:autoSizeMaxTextSize="14sp"
+            android:autoSizeMinTextSize="10sp"
+            android:autoSizeStepGranularity="1sp"
+            android:autoSizeTextType="uniform"
+            android:maxLines="1"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:text="전환"
+            app:cornerRadius="20dp"
+            app:layout_constraintBottom_toBottomOf="@id/btnSecondStartStop"
+            app:layout_constraintEnd_toStartOf="@id/btnSecondKeepScreen"
+            app:layout_constraintHorizontal_weight="0.9"
+            app:layout_constraintStart_toEndOf="@id/btnSecondReset"
+            app:layout_constraintTop_toTopOf="@id/btnSecondStartStop" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSecondKeepScreen"
+            style="@style/Timer.SecondStopwatchSecondaryButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:autoSizeMaxTextSize="13sp"
+            android:autoSizeMinTextSize="9sp"
+            android:autoSizeStepGranularity="1sp"
+            android:autoSizeTextType="uniform"
+            android:maxLines="1"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:text="화면꺼짐 방지"
+            app:cornerRadius="20dp"
+            app:layout_constraintBottom_toBottomOf="@id/btnSecondStartStop"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_weight="1.45"
+            app:layout_constraintStart_toEndOf="@id/btnSecondSwitch"
+            app:layout_constraintTop_toTopOf="@id/btnSecondStartStop" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSecondClock"
+            style="@style/Timer.SecondStopwatchSecondaryButton"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_marginTop="6dp"
+            android:autoSizeMaxTextSize="13sp"
+            android:autoSizeMinTextSize="10sp"
+            android:autoSizeStepGranularity="1sp"
+            android:autoSizeTextType="uniform"
+            android:maxLines="1"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:text="시계"
+            app:cornerRadius="19dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="@id/btnSecondStartStop"
+            app:layout_constraintStart_toStartOf="@id/btnSecondStartStop"
+            app:layout_constraintTop_toBottomOf="@id/btnSecondStartStop" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <com.google.android.material.card.MaterialCardView
+        style="@style/Timer.SurfaceCard"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:cardCornerRadius="18dp"
+        app:cardElevation="1dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@id/guidelineLapStart"
+        app:layout_constraintTop_toBottomOf="@id/guidelineTimeBottom">
+
+        <ListView
+            android:id="@+id/secondLapListView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:divider="?attr/appDivider"
+            android:dividerHeight="1dp"
+            android:padding="4dp" />
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
