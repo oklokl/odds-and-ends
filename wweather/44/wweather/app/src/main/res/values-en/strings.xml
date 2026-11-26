@@ -1,0 +1,156 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">WWeather</string>
+
+    <string name="checking_location">Checking location…</string>
+    <string name="location_not_found">Unable to get location</string>
+    <string name="gps_off">Location services are turned off. Please enable them.</string>
+
+    <string name="pressure_default">Pressure: -</string>
+    <string name="pressure_value">Pressure: %1$s hPa</string>
+    <string name="emoji_description">Status icon</string>
+    <string name="region_value">%1$s Pressure</string>
+
+    <string name="weather_default">Checking weather…</string>
+    <string name="weather_rain">Raining now</string>
+    <string name="weather_no_rain">No rain now</string>
+    <string name="weather_unknown">Rain status unavailable</string>
+    <string name="weather_precip">Precipitation now</string>
+    <string name="weather_rain_check_failed">Precipitation check failed</string>
+    <string name="api_error">API Error: %1$s</string>
+    <string name="api_no_data">No data</string>
+    <string name="api_no_pressure">No pressure</string>
+    <string name="api_fetch_failed">Fetch failed</string>
+    <string name="open_settings">Select Region</string>
+
+    <string name="feeling_pain">Pain</string>
+    <string name="feeling_ok">Good</string>
+    <string name="condition_pain">Pain · Poor</string>
+    <string name="condition_normal">Normal · Moderate</string>
+    <string name="condition_good">No Pain · Good</string>
+    <string name="empty" />
+
+    <string name="alert_change">Pressure change alert</string>
+    <string name="alert_condition">Conditional alert</string>
+    <string name="alert_sensitivity">Alert sensitivity</string>
+    <string name="save">Save</string>
+    <string name="sensitivity_value">Pressure range: %1$d ~ %2$d hPa</string>
+    <string name="settings_saved">Settings saved</string>
+
+    <string name="temp_label">Temp</string>
+    <string name="temp_default">-</string>
+    <string name="wind_dir_label">Wind Dir</string>
+    <string name="wind_speed_label">Wind Spd</string>
+    <string name="humidity_label">Humidity</string>
+    <string name="wind_legend">Wind: 0-N, 90-E, 180-S, 270-W, 360-Calm</string>
+    <string name="value_default">-</string>
+    <string name="save_image">Save Image</string>
+    <string name="share_image">Share</string>
+
+    <string name="lang_toggle_button">KR</string>
+    <string name="temp_unit_to_f">°F</string>
+    <string name="temp_unit_to_c">°C</string>
+
+    <string name="wind_ui_button">Wind UI</string>
+    <string name="retry_button">Reconnect</string>
+    <string name="log_button">Log</string>
+    <string name="status_start">Ready</string>
+    <string name="status_in_progress">Loading…</string>
+    <string name="status_success">Success</string>
+    <string name="status_cache">Cached</string>
+    <string name="status_fail">Failed</string>
+    <string name="current_time_default">Current time: -</string>
+    <string name="current_time_value">Current time: %1$s</string>
+    <string name="diagnostics_log_title">Diagnostic Log</string>
+    <string name="close">Close</string>
+    <string name="copy">Copy</string>
+    <string name="share">Share</string>
+    <string name="log_empty">(No logs)</string>
+    <string name="log_copied">Log copied to clipboard</string>
+    <string name="share_log_title">Share Log</string>
+    <string name="weather_rain_cache">Raining now (Cached)</string>
+    <string name="weather_no_rain_cache">No rain now (Cached)</string>
+    <string name="wind_popup_title">Wind Vane</string>
+    <string name="compass_popup_title">Compass</string>
+    <string name="wind_from_na">Wind From: -</string>
+    <string name="wind_from_format">Wind From: %1$s° (%2$s)</string>
+    <string name="compass_heading_na">Heading: -</string>
+    <string name="compass_heading_format">Heading: %1$d° (%2$s)</string>
+    <string name="compass_sensor_none">Heading: No sensor</string>
+    <string name="calibrate_hint">Move your phone in a figure-8 (∞) to calibrate compass accuracy.</string>
+    <string name="show_status_icon">Show status icon</string>
+
+    <string name="ww_legend">WW1 Code: 0~2(Clear), 4(Haze), 10(Mist), 30(Fog), 40~42(Rain), 50~59(Drizzle), 60~68(Rain), 71~76(Snow)</string>
+    <string name="ww_loading">Checking weather code…</string>
+    <string name="ww_unavailable">Weather code unavailable</string>
+
+    <string name="provider_to_open">Open-Meteo</string>
+    <string name="provider_to_kma">KMA</string>
+    <string name="provider_footer_kma">KMA Korea Weather</string>
+    <string name="provider_footer_open">Open-Meteo Weather</string>
+    <string name="kma_as_of_format">KMA API request time: %1$s (KST)</string>
+    <string name="open_meteo_as_of_format">Model data as of: %1$s (KST)</string>
+    <string name="open_meteo_failed">Failed to load Open-Meteo current weather</string>
+    <string name="press_reconnect">Tap Reconnect to check current weather.</string>
+    <string name="location_consent_badge">One-time Foreground Location</string>
+    <string name="location_consent_title">Check Weather at Current Location</string>
+    <string name="location_consent_message">• Checks your approximate location once only while using the app.\n• Does not request precise GPS or background location.\n• Near borders, an adjacent district may appear; you can pin a region in Select Region.</string>
+    <string name="location_yes">Yes</string>
+    <string name="location_yes_confirm">Check Location</string>
+    <string name="location_no">Cancel</string>
+    <string name="gps_off_badge">Location Disabled</string>
+    <string name="gps_off_title">Turn On Location Services</string>
+    <string name="gps_off_message">Location services must be enabled to fetch weather for your current area.\nYou can open Settings or choose a region manually.</string>
+    <string name="open_location_settings">Location Settings</string>
+    <string name="cancel_action">Cancel</string>
+    <string name="loading_now">Loading weather data…</string>
+    <string name="loading_location">Checking current location…</string>
+    <string name="open_wmo_legend">Open-Meteo WMO Code: 0(Clear), 1~3(Cloudy), 45~48(Fog), 51~67(Rain), 71~86(Snow), 95~99(Thunderstorm)</string>
+    <string name="no_location_selected">No saved location. Use Select Region or Reconnect.</string>
+    <string name="location_select_manual_hint">Check device location settings or use Select Region.</string>
+    <string name="location_outside_korea">Outside Korea. For KMA weather, choose a Korean region in Select Region or switch to Open-Meteo.</string>
+    <string name="open_snow">Snowing now</string>
+
+    <string name="save_image_option_title">Save Image Options</string>
+    <string name="save_image_option_message">Choose how to save the current screen.\nMosaic Save hides the location name at the top.</string>
+    <string name="save_image_original">Save Original</string>
+    <string name="save_image_mosaic">Save Mosaic</string>
+    <string name="image_saved_downloads">Saved to Downloads</string>
+    <string name="image_saved_mosaic_downloads">Mosaic image saved to Downloads</string>
+    <string name="image_save_failed">Failed to save image</string>
+    <string name="storage_permission_needed">Storage permission is required</string>
+    <string name="screen_not_ready">Screen is not ready yet</string>
+    <string name="save_image_first">Please save an image first</string>
+    <string name="no_share_app">No app available to share</string>
+    <string name="share_chooser_title">Share</string>
+
+    <string name="region_picker_title">Select Region</string>
+    <string name="region_picker_open_title">Select Region · Open-Meteo (CSV)</string>
+    <string name="region_search_hint">Search region</string>
+    <string name="region_search_btn">Search</string>
+    <string name="region_close_btn">Close</string>
+    <string name="region_reset_btn">Reset</string>
+    <string name="region_pin_btn">Pin</string>
+    <string name="region_confirm_btn">Apply</string>
+    <string name="region_pinned_none">Pinned: None</string>
+    <string name="region_pinned_value">Pinned: %1$s</string>
+    <string name="region_no_results">No results</string>
+    <string name="region_toast_no_results">No matching regions found</string>
+    <string name="region_toast_selected">Region changed to %1$s</string>
+    <string name="region_toast_pinned">Pinned region: %1$s</string>
+    <string name="region_toast_reset">Region reset. Tap Reconnect to detect location.</string>
+    <string name="region_csv_error">Unable to read region CSV</string>
+    <string name="region_selected_label">%1$s (Selected)</string>
+    <string name="region_selected_prefix">Selected</string>
+    <string name="region_pinned_prefix">Pinned</string>
+    <string name="region_saved_fallback">Saved area</string>
+    <string name="region_near_current">Near current location</string>
+    <string name="region_near_previous">Near previous location</string>
+    <string name="region_overseas">Current location (Overseas)</string>
+
+    <string name="location_failed_title">Location Not Found</string>
+    <string name="location_failed_message">Unable to obtain your approximate location indoors or due to weak signal.\nPlease try again or choose a region manually in Select Region.</string>
+    <string name="location_failed_message_with_last">Unable to obtain a fresh approximate location.\nYou can retry, use your previous location (%1$s), or choose a region manually.</string>
+    <string name="retry_action">Retry</string>
+    <string name="use_previous_location">Use Previous</string>
+</resources>
