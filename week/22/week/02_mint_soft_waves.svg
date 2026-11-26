@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1080" viewBox="0 0 1440 1080">
+  <title>Mint Android widget background</title>
+  <desc>Scalable decorative rounded mint card; translucent curves remain at the edges to leave center free for a clock and calendar.</desc>
+  <defs>
+    <clipPath id="card-clip"><rect x="0" y="0" width="1440" height="1080" rx="112" ry="112"/></clipPath>
+  </defs>
+  <g clip-path="url(#card-clip)">
+    
+    <rect width="1440" height="1080" fill="#D8FFEA"/>
+    <!-- calmer continuous waves: flowing mint silk -->
+    <path d="M 0,0 H 1440 V 178 C 1250,123 1090,203 946,190 C 726,170 672,71 490,95 C 290,120 159,235 0,228 Z" fill="#B7F6DA"/>
+    <path d="M 0,0 H 510 C 392,190 270,175 0,356 Z" fill="#80DCB8" fill-opacity=".49"/>
+    <path d="M 0,0 H 315 C 248,124 131,126 0,204 Z" fill="#6ED5AF" fill-opacity=".42"/>
+    <path d="M 0,858 C 171,790 284,846 415,876 C 597,918 716,888 862,828 C 1079,734 1269,758 1440,836 V 1080 H 0 Z" fill="#ADF1D4" fill-opacity=".83"/>
+    <path d="M 0,964 C 169,901 250,948 373,1009 C 493,1067 612,1068 711,1028 C 895,956 1041,922 1191,947 C 1279,963 1363,989 1440,1024 V 1080 H 0 Z" fill="#8CE6C4" fill-opacity=".46"/>
+    <path d="M 1010,1080 C 1131,962 1280,925 1440,901 V 1080 Z" fill="#6BD8B1" fill-opacity=".36"/>
+
+  </g>
+</svg>
