@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">메모장 바꾸기</string>
+    <string name="label_target_word">대체할 단어</string>
+    <string name="label_replacement_word">대체될 단어</string>
+    <string name="label_original_text">여기에 전체 텍스트를 입력하세요…</string>
+    <string name="label_result_text">수정 가능한 결과</string>
+    <string name="action_replace">단어 대체</string>
+    <string name="action_copy_result">결과 복사</string>
+    <string name="action_clean">Clean</string>
+    <string name="action_expand">확대</string>
+    <string name="action_collapse">축소</string>
+    <string name="action_undo">실행 취소</string>
+    <string name="cd_clear_target_word">대체할 단어 지우기</string>
+    <string name="cd_clear_replacement_word">대체될 단어 지우기</string>
+    <string name="cd_expand_original">전체 텍스트 입력창 확대</string>
+    <string name="cd_collapse_original">전체 텍스트 입력창 축소</string>
+    <string name="cd_expand_result">결과 텍스트 입력창 확대</string>
+    <string name="cd_collapse_result">결과 텍스트 입력창 축소</string>
+    <string name="msg_enter_target_word">대체할 단어를 입력해 주세요.</string>
+    <string name="msg_enter_original_text">전체 텍스트를 입력해 주세요.</string>
+    <string name="msg_no_matches_found">일치하는 단어가 없습니다.</string>
+    <string name="msg_replaced_count">%1$d건 대체되었습니다.</string>
+    <string name="msg_copied_to_clipboard">결과가 클립보드에 복사되었습니다.</string>
+    <string name="msg_nothing_to_copy">복사할 내용이 없습니다.</string>
+    <string name="msg_clipboard_unavailable">클립보드를 사용할 수 없습니다.</string>
+    <string name="msg_cleared_all">모든 입력값이 지워졌습니다.</string>
+</resources>
