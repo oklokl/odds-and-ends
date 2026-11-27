@@ -1,0 +1,2555 @@
+package com.krdonon.wweather
+
+import android.Manifest
+import android.animation.ValueAnimator
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.ContentValues
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.drawable.GradientDrawable
+import android.location.Address
+import android.location.Geocoder
+import android.location.Location
+import android.location.LocationManager
+import android.net.Uri
+import android.os.Build
+import android.os.Bundle
+import android.os.CancellationSignal
+import android.os.Environment
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
+import android.provider.MediaStore
+import android.provider.Settings
+import android.text.Editable
+import android.text.TextWatcher
+import android.util.Log
+import android.view.View
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.NumberPicker
+import android.widget.ProgressBar
+import android.widget.ScrollView
+import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import androidx.core.location.LocationManagerCompat
+import androidx.core.net.toUri
+import androidx.core.os.LocaleListCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.widget.NestedScrollView
+import androidx.lifecycle.lifecycleScope
+import com.google.android.gms.location.CurrentLocationRequest
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
+import kotlinx.coroutines.*
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.io.File
+import java.net.URLEncoder
+import java.text.SimpleDateFormat
+import java.util.*
+import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.math.*
+
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private val client by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(20, TimeUnit.SECONDS)
+            .callTimeout(25, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
+            .build()
+    }
+
+    // 기상청 AWS 조회용 클라이언트: 불량 연결 시 장시간 블로킹을 막기 위해 짧은 타임아웃(7초)을 사용합니다.
+    private val kmaAwsClient by lazy {
+        client.newBuilder()
+            .connectTimeout(5, TimeUnit.SECONDS)
+            .readTimeout(6, TimeUnit.SECONDS)
+            .callTimeout(7, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
+            .build()
+    }
+
+    // WW1 조회용 클라이언트는 동일한 연결 풀/스레드 풀을 공유하면서 타임아웃만 7초로 제한합니다.
+    private val ww1Client by lazy {
+        Aws2Ww1Client(
+            applicationContext,
+            BuildConfig.KMA_AUTH_KEY,
+            client.newBuilder()
+                .connectTimeout(7, TimeUnit.SECONDS)
+                .readTimeout(7, TimeUnit.SECONDS)
+                .callTimeout(7, TimeUnit.SECONDS)
+                .build()
+        )
+    }
+
+    @Volatile private var isRefreshing: Boolean = false
+
+    // Age Signals 원본 연령대는 영구 저장하지 않고 프로세스 메모리에서만 분류합니다.
+    private val ageSignalsCompliance by lazy { AgeSignalsCompliance(applicationContext) }
+    private var ageSignalsRequested: Boolean = false
+
+    // --- KMA AWS / WW1 요청 제어: 빠른 1차 응답 + 실패 시 조용한 백그라운드 재시도 ---
+    private var awsRetryJob: Job? = null
+    private var ww1PrimaryJob: Job? = null
+    private var ww1RetryJob: Job? = null
+    private var ww1RequestSeq: Long = 0L
+
+
+    private val timeHandler by lazy { Handler(Looper.getMainLooper()) }
+    private val timeTicker = object : Runnable {
+        override fun run() {
+            updateTimeBox()
+            // 다음 분 경계에 맞춰 갱신(배터리/성능 균형)
+            val now = System.currentTimeMillis()
+            val delay = 60_000L - (now % 60_000L)
+            timeHandler.postDelayed(this, delay)
+        }
+    }
+
+    private fun logD(msg: String) {
+        Log.d(TAG, msg)
+        AppLog.i(TAG, msg)
+    }
+
+    private fun logE(msg: String, t: Throwable? = null) {
+        if (t != null) Log.e(TAG, msg, t) else Log.e(TAG, msg)
+        val tail = if (t != null) " | ${t::class.java.simpleName}: ${t.message}" else ""
+        AppLog.e(TAG, msg + tail)
+    }
+
+    private fun cacheTimestampMs(): Long =
+        prefs.getLong("aws_cache_time", 0L)
+
+    private fun cacheAgeMinutes(): Long {
+        val ts = cacheTimestampMs()
+        if (ts <= 0L) return Long.MAX_VALUE
+        return (System.currentTimeMillis() - ts) / 60000L
+    }
+
+    private fun kstTm2Minus(mins: Int = 2): String {
+        val tz = TimeZone.getTimeZone("Asia/Seoul")
+        val cal = Calendar.getInstance(tz).apply { timeInMillis = System.currentTimeMillis() }
+        cal.add(Calendar.MINUTE, -mins)
+        return SimpleDateFormat("yyyyMMddHHmm", Locale.KOREA).apply { timeZone = tz }.format(cal.time)
+    }
+
+
+    private lateinit var statusText: TextView
+    private lateinit var regionText: TextView
+    private lateinit var tempLabelText: TextView
+    private lateinit var tempValueText: TextView
+
+
+    private lateinit var windDirValueText: TextView
+    private lateinit var windDirCardinalText: TextView
+    private lateinit var windSpeedValueText: TextView
+    private lateinit var humidityValueText: TextView
+    private lateinit var windUiButton: Button
+
+    // 마지막으로 수신한 풍향(도). 팝업 풍향계에 사용.
+    @Volatile private var lastWindDirectionDeg: Float = Float.NaN
+    private lateinit var saveImageButton: Button
+    private lateinit var shareImageButton: Button
+    private lateinit var languageToggleButton: Button
+    private lateinit var tempUnitToggleButton: Button
+    private var lastSavedImageUri: Uri? = null
+    private var pendingSaveAfterPermission: Boolean = false
+    private var pendingSaveMosaic: Boolean = false
+
+    private lateinit var pressureText: TextView
+    private lateinit var weatherText: TextView
+    private lateinit var wwNowText: TextView
+    private lateinit var wwLegendText: TextView
+    private lateinit var emojiView: ImageView
+    private lateinit var conditionText: TextView
+    private lateinit var settingsButton: Button
+    private lateinit var retryButton: Button
+    private lateinit var logButton: Button
+    private lateinit var sourceToggleButton: Button
+    private lateinit var sourceFooterText: TextView
+    private var loadingDialog: AlertDialog? = null
+    private var loadingLabel: TextView? = null
+    private var attentionAnimator: ValueAnimator? = null
+    private var weatherRequestSeq = 0L
+    private var locationRequestSeq = 0L
+    private var fusedCancellationSource: CancellationTokenSource? = null
+    private var systemLocationCancellation: CancellationSignal? = null
+    private var locationTimeoutRunnable: Runnable? = null
+    private var currentPressureHpa: Double = Double.NaN
+    private var currentTempCelsius: Double = Double.NaN
+    private var useFahrenheit: Boolean = false
+    private var currentWeatherMode: String = "IDLE"
+    private var currentWeatherTimeRaw: String = ""
+    private var currentRainDecision: Int = -1
+    private var currentUsedCache: Boolean = false
+    private var currentCacheOld: Boolean = false
+    private var currentWwCode: Int = Int.MIN_VALUE
+    private var currentWwProvider: String = ""
+    private var currentAreaName: String = ""
+    private var currentStationId: Int = 0
+    private var currentStationName: String = ""
+    private var currentStatusResult: String = "START"
+    private var currentErrorDetail: String = ""
+    private var awsJob: Job? = null
+    private var openMeteoJob: Job? = null
+    private var geocodeJob: Job? = null
+    private val openMeteoClient by lazy { OpenMeteoClient(client) }
+    private val csvRegions by lazy { LocalRegionRepository.read(applicationContext) }
+    private var provider: WeatherProvider = WeatherProvider.KMA
+
+    private enum class WeatherProvider { KMA, OPEN_METEO }
+    private lateinit var retryStatusText: TextView
+    private var timeText: TextView? = null
+    private var isLanguageSwitchPending: Boolean = false
+
+    private val REQ_LOCATION = 100
+    private val REQ_WRITE_STORAGE = 300
+
+    private val prefs by lazy { getSharedPreferences("settings", MODE_PRIVATE) }
+    private val PREF_LAST_STN = "last_stn"
+    private val PREF_LAST_LAT = "last_lat"
+    private val PREF_LAST_LON = "last_lon"
+    private val PREF_LAST_AREA = "last_area"
+    private val PREF_SELECTED_STN = "selected_stn"
+    private val PREF_PIN_ENABLED = "selected_stn_pinned"
+    private val PREF_PROVIDER = "weather_provider"
+    private val PREF_MANUAL_LAT = "manual_lat"
+    private val PREF_MANUAL_LON = "manual_lon"
+    private val PREF_MANUAL_NAME = "manual_name"
+    private val PREF_CACHE_STN = "aws_cache_stn"
+    private val PREF_TEMP_UNIT = "temp_unit"
+
+    /** 앱 공통 상수. 기상청 API 키는 local.properties → BuildConfig에서 주입합니다. */
+    private companion object {
+        private const val CACHE_NAME = "nph-aws2_min.cache"
+        private const val TAG = "KMA"
+    }
+
+    // 분류 임계 구간 (보통: 1010.00 ~ 1016.00)
+    private val PRESSURE_LOW = 1010.00
+    private val PRESSURE_HIGH = 1016.00
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+        )
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = true
+            isAppearanceLightNavigationBars = true
+        }
+
+        // 상단 상태바(시계/와이파이/배터리) 및 하단 네비게이션 바와 겹치지 않도록 4면 인셋 자동 조절
+        val rootLayout = findViewById<View>(R.id.rootLayout)
+        val initialLeftPadding = rootLayout.paddingLeft
+        val initialTopPadding = rootLayout.paddingTop
+        val initialRightPadding = rootLayout.paddingRight
+        val initialBottomPadding = rootLayout.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(rootLayout) { v, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            v.setPadding(
+                initialLeftPadding + bars.left,
+                initialTopPadding + bars.top,
+                initialRightPadding + bars.right,
+                initialBottomPadding + bars.bottom
+            )
+            insets
+        }
+        ViewCompat.requestApplyInsets(rootLayout)
+
+        if (savedInstanceState == null) {
+            AppLog.clear()
+        }
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        statusText     = findViewById(R.id.statusText)
+        regionText     = findViewById(R.id.regionText)
+        pressureText   = findViewById(R.id.pressureText)
+        weatherText    = findViewById(R.id.weatherText)
+        wwNowText      = findViewById(R.id.wwNowText)
+        wwLegendText   = findViewById(R.id.wwLegendText)
+        wwLegendText.text = getString(R.string.ww_legend)
+        emojiView      = findViewById(R.id.emojiView)
+        conditionText  = findViewById(R.id.conditionText)
+        settingsButton = findViewById(R.id.settingsButton)
+        retryButton    = findViewById(R.id.retryButton)
+        logButton      = findViewById(R.id.logButton)
+        sourceToggleButton = findViewById(R.id.sourceToggleButton)
+        sourceFooterText = findViewById(R.id.sourceFooterText)
+        provider = if (prefs.getString(PREF_PROVIDER, "kma") == "open_meteo") WeatherProvider.OPEN_METEO else WeatherProvider.KMA
+        updateProviderUi()
+
+        timeText      = findViewById(R.id.timeText)
+        retryStatusText=  findViewById(R.id.retryStatusText)
+
+        tempLabelText  = findViewById(R.id.tempLabelText)
+        tempValueText  = findViewById(R.id.tempValueText)
+
+
+        windDirValueText    = findViewById(R.id.windDirValueText)
+        windDirCardinalText = findViewById(R.id.windDirCardinalText)
+        windSpeedValueText  = findViewById(R.id.windSpeedValueText)
+        humidityValueText   = findViewById(R.id.humidityValueText)
+        windUiButton       = findViewById(R.id.windUiButton)
+        saveImageButton  = findViewById(R.id.saveImageButton)
+        shareImageButton = findViewById(R.id.shareImageButton)
+        languageToggleButton = findViewById(R.id.languageToggleButton)
+        tempUnitToggleButton = findViewById(R.id.tempUnitToggleButton)
+        shareImageButton.isEnabled = false
+
+        useFahrenheit = prefs.getString(PREF_TEMP_UNIT, "C") == "F"
+        updateTempUnitButtonText()
+
+        // 앱을 새로 시작했을 때만 '고정'하지 않은 이전 세션의 일시 지역 선택을 초기화합니다.
+        if (savedInstanceState == null && !hasPinnedStationSelection()) {
+            prefs.edit()
+                .remove(PREF_SELECTED_STN)
+                .remove(PREF_MANUAL_LAT)
+                .remove(PREF_MANUAL_LON)
+                .remove(PREF_MANUAL_NAME)
+                .putBoolean(PREF_PIN_ENABLED, false)
+                .apply()
+        }
+
+        if (savedInstanceState != null) {
+            restoreUiState(savedInstanceState)
+        } else {
+            initializeIdleWeatherUi()
+        }
+
+        saveImageButton.setOnClickListener { saveCurrentScreenImage(mosaicRegion = false) }
+        saveImageButton.setOnLongClickListener {
+            showSaveImageOptionsDialog()
+            true
+        }
+        shareImageButton.setOnClickListener { shareLastSavedImage() }
+        languageToggleButton.setOnClickListener { toggleAppLanguage() }
+        tempUnitToggleButton.setOnClickListener { toggleTemperatureUnit() }
+
+        settingsButton.setOnClickListener {
+            showRegionPickerDialog()
+        }
+
+        configureRetryAttention()
+        retryButton.setOnClickListener { tryReconnect() }
+        sourceToggleButton.setOnClickListener { switchWeatherProvider() }
+
+        logButton.setOnClickListener {
+            showLogDialog()
+        }
+
+        windUiButton.setOnClickListener {
+            val deg = if (!lastWindDirectionDeg.isNaN()) {
+                lastWindDirectionDeg
+            } else {
+                windDirValueText.text?.toString()?.toFloatOrNull() ?: Float.NaN
+            }
+            WindCompassDialogFragment
+                .newInstance(deg)
+                .show(supportFragmentManager, "wind_compass")
+        }
+
+        updateTimeBox()
+
+        // 백그라운드 실행 금지 정책: 과거 버전에 등록됐을 수 있는 알람을 모두 취소합니다.
+        AlarmScheduler.reschedule(this)
+        // 시작 시 위치 권한을 요청하거나 GPS/네트워크를 사용하지 않습니다.
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+
+        // 위치/알림 권한 다이얼로그와 Play의 연령 공유 UI가 겹치지 않도록
+        // Activity가 실제 포커스를 얻은 뒤 한 번만 요청합니다.
+        if (hasFocus && !ageSignalsRequested) {
+            ageSignalsRequested = true
+            ageSignalsCompliance.requestAgeCategory(this)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        attentionAnimator?.resume()
+        // 화면이 보이는 동안 현재 시간 표시 갱신
+        timeHandler.removeCallbacks(timeTicker)
+        timeHandler.post(timeTicker)
+        // 화면 복귀 시에도 사용자가 누르기 전에는 위치를 조회하지 않습니다.
+    }
+
+    override fun onPause() {
+        super.onPause()
+        attentionAnimator?.pause()
+        timeHandler.removeCallbacks(timeTicker)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // 앱이 백그라운드로 이동하면(화면 회전 제외) 진행 중인 위치/날씨 요청을 즉시 취소해
+        // 앱이 켜져 있을 때만 위치와 네트워크를 사용하도록 보장합니다.
+        val hadForegroundRefresh = isRefreshing
+        val hasActiveJob = hadForegroundRefresh ||
+            awsJob?.isActive == true ||
+            awsRetryJob?.isActive == true ||
+            ww1PrimaryJob?.isActive == true ||
+            ww1RetryJob?.isActive == true ||
+            openMeteoJob?.isActive == true
+        if (!isChangingConfigurations && hasActiveJob) {
+            logD("app moved to background; canceling active foreground location/weather request")
+            cancelCurrentWeatherRequest()
+            if (hadForegroundRefresh) {
+                statusText.setText(R.string.press_reconnect)
+                retryStatusText.setText(R.string.status_start)
+            }
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean("age_signals_requested", ageSignalsRequested)
+        outState.putString("ui_status", statusText.text?.toString())
+        outState.putString("ui_region", regionText.text?.toString())
+        outState.putString("ui_pressure", pressureText.text?.toString())
+        outState.putString("ui_weather", weatherText.text?.toString())
+        outState.putString("ui_ww", wwNowText.text?.toString())
+        outState.putString("ui_temp", tempValueText.text?.toString())
+        outState.putString("ui_wind_dir", windDirValueText.text?.toString())
+        outState.putString("ui_wind_speed", windSpeedValueText.text?.toString())
+        outState.putString("ui_humidity", humidityValueText.text?.toString())
+        outState.putString("ui_condition", conditionText.text?.toString())
+        outState.putString("ui_retry_status", retryStatusText.text?.toString())
+        outState.putFloat("ui_last_wind_deg", lastWindDirectionDeg)
+        outState.putDouble("ui_pressure_hpa", currentPressureHpa)
+        outState.putDouble("ui_temp_c", currentTempCelsius)
+        outState.putString("ui_weather_mode", currentWeatherMode)
+        outState.putString("ui_weather_time_raw", currentWeatherTimeRaw)
+        outState.putInt("ui_rain_decision", currentRainDecision)
+        outState.putBoolean("ui_used_cache", currentUsedCache)
+        outState.putBoolean("ui_cache_old", currentCacheOld)
+        outState.putInt("ui_ww_code", currentWwCode)
+        outState.putString("ui_ww_provider", currentWwProvider)
+        outState.putString("ui_area_name", currentAreaName)
+        outState.putInt("ui_station_id", currentStationId)
+        outState.putString("ui_station_name", currentStationName)
+        outState.putString("ui_status_result", currentStatusResult)
+        outState.putString("ui_error_detail", currentErrorDetail)
+        outState.putString("ui_saved_uri", lastSavedImageUri?.toString())
+    }
+
+    private fun restoreUiState(state: Bundle) {
+        ageSignalsRequested = state.getBoolean("age_signals_requested", false)
+        lastWindDirectionDeg = state.getFloat("ui_last_wind_deg", Float.NaN)
+        currentPressureHpa = state.getDouble("ui_pressure_hpa", Double.NaN)
+        currentTempCelsius = state.getDouble("ui_temp_c", Double.NaN)
+        currentWeatherMode = state.getString("ui_weather_mode") ?: "IDLE"
+        currentWeatherTimeRaw = state.getString("ui_weather_time_raw") ?: ""
+        currentRainDecision = state.getInt("ui_rain_decision", -1)
+        currentUsedCache = state.getBoolean("ui_used_cache", false)
+        currentCacheOld = state.getBoolean("ui_cache_old", false)
+        currentWwCode = state.getInt("ui_ww_code", Int.MIN_VALUE)
+        currentWwProvider = state.getString("ui_ww_provider") ?: ""
+        currentAreaName = state.getString("ui_area_name") ?: ""
+        currentStationId = state.getInt("ui_station_id", 0)
+        currentStationName = state.getString("ui_station_name") ?: ""
+        currentStatusResult = state.getString("ui_status_result") ?: "START"
+        currentErrorDetail = state.getString("ui_error_detail") ?: ""
+
+        windDirValueText.text = state.getString("ui_wind_dir") ?: "-"
+        updateWindDirectionCardinal(lastWindDirectionDeg)
+        windSpeedValueText.text = state.getString("ui_wind_speed") ?: "-"
+        humidityValueText.text = state.getString("ui_humidity") ?: "-"
+
+        if (currentTempCelsius.isFinite()) {
+            tempValueText.text = formatCelsiusForDisplay(currentTempCelsius)
+        } else {
+            tempValueText.text = state.getString("ui_temp") ?: "-"
+        }
+
+        if (!currentPressureHpa.isNaN()) {
+            val paOut = String.format(Locale.US, "%.2f", currentPressureHpa)
+            pressureText.text = getString(R.string.pressure_value, paOut)
+            updateEmojiAndLabel(currentPressureHpa)
+        } else {
+            pressureText.text = when (currentErrorDetail) {
+                "NO_DATA" -> getString(R.string.api_error, getString(R.string.api_no_data))
+                "NO_PRESSURE" -> getString(R.string.api_error, getString(R.string.api_no_pressure))
+                "FETCH_FAILED" -> getString(R.string.api_error, getString(R.string.api_fetch_failed))
+                else -> getString(R.string.pressure_default)
+            }
+            emojiView.setImageResource(R.drawable.normal)
+            conditionText.text = ""
+        }
+
+        reapplyLocalizedTexts(state)
+
+        val uriStr = state.getString("ui_saved_uri")
+        lastSavedImageUri = uriStr?.let { runCatching { it.toUri() }.getOrNull() }
+        shareImageButton.isEnabled = lastSavedImageUri != null
+    }
+
+    private fun reapplyLocalizedTexts(state: Bundle) {
+        val en = isEnglishLocale()
+        val inProgressText = getString(R.string.status_in_progress)
+        val savedRetryStatus = state.getString("ui_retry_status") ?: getString(R.string.status_start)
+
+        if (savedRetryStatus == inProgressText || currentWeatherMode == "IDLE") {
+            if (currentWeatherMode == "IDLE") {
+                initializeIdleWeatherUi()
+                return
+            }
+            statusText.setText(R.string.press_reconnect)
+            retryStatusText.setText(R.string.status_start)
+        } else {
+            statusText.text = when (currentWeatherMode) {
+                "KMA" -> if (currentWeatherTimeRaw.isNotEmpty()) {
+                    getString(R.string.kma_as_of_format, currentWeatherTimeRaw)
+                } else getString(R.string.press_reconnect)
+                "OPEN_METEO" -> when {
+                    currentErrorDetail == "OPEN_METEO_FAILED" -> getString(R.string.open_meteo_failed)
+                    currentWeatherTimeRaw.isNotEmpty() -> getString(R.string.open_meteo_as_of_format, currentWeatherTimeRaw)
+                    else -> getString(R.string.press_reconnect)
+                }
+                "LOC_ERROR" -> getString(R.string.location_not_found)
+                "OUTSIDE_KOREA" -> getString(R.string.location_outside_korea)
+                "NO_LOCATION" -> getString(R.string.no_location_selected)
+                else -> state.getString("ui_status") ?: getString(R.string.press_reconnect)
+            }
+
+            retryStatusText.text = when (currentStatusResult) {
+                "SUCCESS" -> getString(R.string.status_success)
+                "CACHE" -> getString(R.string.status_cache)
+                "FAIL" -> getString(R.string.status_fail)
+                else -> getString(R.string.status_start)
+            }
+        }
+
+        regionText.text = when (currentWeatherMode) {
+            "LOC_ERROR", "OUTSIDE_KOREA" -> getString(R.string.location_select_manual_hint)
+            "NO_LOCATION" -> ""
+            "KMA" -> {
+                val base = currentAreaName.ifBlank { state.getString("ui_region").orEmpty() }
+                if (currentStationId > 0 && currentStationName.isNotBlank() && !base.contains("stn=")) {
+                    "$base (stn=$currentStationId $currentStationName)"
+                } else base
+            }
+            else -> currentAreaName.ifBlank { state.getString("ui_region").orEmpty() }
+        }
+
+        // 비가시성/언어 전환 시 최근 GPS 좌표가 수동 선택 없이 저장돼 있으면 지오코더로 지역명도 현재 언어로 갱신
+        if (!hasActiveStationSelection() &&
+            (currentWeatherMode == "KMA" || currentWeatherMode == "OPEN_METEO") &&
+            prefs.contains(PREF_LAST_LAT) && prefs.contains(PREF_LAST_LON)
+        ) {
+            val lat = prefs.getFloat(PREF_LAST_LAT, 0f).toDouble()
+            val lon = prefs.getFloat(PREF_LAST_LON, 0f).toDouble()
+            if (isNearKorea(lat, lon)) {
+                lifecycleScope.launch {
+                    val localizedArea = resolveAreaName(lat, lon)
+                    currentAreaName = localizedArea
+                    prefs.edit().putString(PREF_LAST_AREA, localizedArea).apply()
+                    regionText.text = if (provider == WeatherProvider.KMA && currentStationId > 0 && currentStationName.isNotBlank()) {
+                        "$localizedArea (stn=$currentStationId $currentStationName)"
+                    } else {
+                        localizedArea
+                    }
+                }
+            }
+        }
+
+        weatherText.text = when (currentRainDecision) {
+            1 -> if (currentUsedCache) getString(R.string.weather_rain_cache) else getString(R.string.weather_rain)
+            0 -> if (currentCacheOld) getString(R.string.weather_unknown)
+            else if (currentUsedCache) getString(R.string.weather_no_rain_cache) else getString(R.string.weather_no_rain)
+            2 -> getString(R.string.open_snow)
+            3 -> getString(R.string.weather_precip)
+            4 -> getString(R.string.weather_rain_check_failed)
+            else -> getString(R.string.weather_unknown)
+        }
+
+        wwNowText.text = when {
+            currentWwCode != Int.MIN_VALUE && currentWwProvider == "OPEN_METEO" ->
+                "$currentWwCode(${OpenMeteoClient.description(currentWwCode, en)})"
+            currentWwCode != Int.MIN_VALUE && currentWwProvider == "KMA" ->
+                "$currentWwCode(${Aws2Ww1Client.labelFor(currentWwCode, en)})"
+            else -> getString(R.string.ww_unavailable)
+        }
+    }
+
+    private fun isEnglishLocale(): Boolean {
+        val activeLang = resources.configuration.locales[0]?.language
+        if (!activeLang.isNullOrBlank()) {
+            return activeLang.equals("en", ignoreCase = true)
+        }
+        val appLocales = AppCompatDelegate.getApplicationLocales()
+        return appLocales[0]?.language?.equals("en", ignoreCase = true) == true
+    }
+
+    private fun toggleAppLanguage() {
+        if (isLanguageSwitchPending || isChangingConfigurations || isFinishing || isDestroyed) return
+        isLanguageSwitchPending = true
+        languageToggleButton.isEnabled = false
+
+        val nextTag = if (isEnglishLocale()) "ko" else "en"
+        val previousAppLang = AppCompatDelegate.getApplicationLocales()[0]?.language
+        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(nextTag))
+
+        // 저장된 앱 로케일과 현재 화면 Configuration이 어긋나 recreate()가 생략되는 경우 보정
+        if (previousAppLang?.equals(nextTag, ignoreCase = true) == true) {
+            recreate()
+        } else {
+            languageToggleButton.postDelayed({
+                if (!isFinishing && !isDestroyed) {
+                    isLanguageSwitchPending = false
+                    languageToggleButton.isEnabled = true
+                }
+            }, 1_000L)
+        }
+    }
+
+    private fun toggleTemperatureUnit() {
+        useFahrenheit = !useFahrenheit
+        prefs.edit().putString(PREF_TEMP_UNIT, if (useFahrenheit) "F" else "C").apply()
+        updateTempUnitButtonText()
+        if (currentTempCelsius.isFinite()) {
+            tempValueText.text = formatCelsiusForDisplay(currentTempCelsius)
+        }
+    }
+
+    private fun updateTempUnitButtonText() {
+        tempUnitToggleButton.setText(if (useFahrenheit) R.string.temp_unit_to_c else R.string.temp_unit_to_f)
+    }
+
+    private fun updateTimeBox() {
+        val tv = timeText ?: return
+        try {
+            val fmt = if (isEnglishLocale()) {
+                SimpleDateFormat("EEE, MMM d, yyyy h:mm a", Locale.US)
+            } else {
+                SimpleDateFormat("yyyy년 M월 d일 EEEE a h:mm", Locale.KOREA)
+            }
+            tv.text = fmt.format(Date())
+        } catch (e: Exception) {
+            tv.text = getString(R.string.current_time_default)
+            logE("time format error", e)
+        }
+    }
+
+    /* ---------- 현재 온도 표시 ---------- */
+    private fun parseValidCelsius(raw: String?): Double {
+        val v = raw?.trim()?.toDoubleOrNull() ?: return Double.NaN
+        if (v.isNaN() || v <= -50.0) return Double.NaN
+        return v
+    }
+
+    private fun formatCelsiusForDisplay(celsius: Double): String {
+        if (!celsius.isFinite() || celsius <= -50.0) return "-"
+        if (useFahrenheit) {
+            val f = celsius * 9.0 / 5.0 + 32.0
+            return String.format(Locale.getDefault(), "%.1f", f) + "ºF"
+        }
+        val roundedInt = celsius.roundToInt().toDouble()
+        val s = if (abs(celsius - roundedInt) < 1e-9) {
+            celsius.roundToInt().toString()
+        } else {
+            String.format(Locale.getDefault(), "%.1f", celsius)
+        }
+        return "${s}º"
+    }
+
+    private fun formatMetricDisplay(raw: String?): String {
+        val v = raw?.trim()?.toDoubleOrNull() ?: return "-"
+        if (!v.isFinite() || v < 0.0) return "-"
+        // 화면 표기: 소수점 1자리(스크린샷 기준)
+        return String.format(Locale.US, "%.1f", v)
+    }
+
+    private fun parseValidWindDeg(raw: String?): Float {
+        val v = raw?.trim()?.toFloatOrNull() ?: return Float.NaN
+        return if (v.isFinite() && v in 0f..360f) v else Float.NaN
+    }
+
+    private fun updateWindDirectionCardinal(deg: Float) {
+        if (!deg.isFinite() || deg < 0f || deg > 360f) {
+            windDirCardinalText.text = ""
+            windDirCardinalText.visibility = View.GONE
+            return
+        }
+        var d = deg % 360f
+        if (d < 0f) d += 360f
+        val names = if (isEnglishLocale()) {
+            arrayOf("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+        } else {
+            arrayOf("북", "북동", "동", "남동", "남", "남서", "서", "북서")
+        }
+        val idx = (((d + 22.5f) % 360f) / 45f).toInt().coerceIn(0, 7)
+        windDirCardinalText.text = names[idx]
+        windDirCardinalText.visibility = View.VISIBLE
+    }
+
+    /* ---------- 화면 캡처 저장/공유 ---------- */
+    private fun showSaveImageOptionsDialog() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.save_image_option_title)
+            .setMessage(R.string.save_image_option_message)
+            .setPositiveButton(R.string.save_image_mosaic) { _, _ ->
+                saveCurrentScreenImage(mosaicRegion = true)
+            }
+            .setNeutralButton(R.string.save_image_original) { _, _ ->
+                saveCurrentScreenImage(mosaicRegion = false)
+            }
+            .setNegativeButton(R.string.cancel_action, null)
+            .show()
+    }
+
+    private fun saveCurrentScreenImage(mosaicRegion: Boolean = false) {
+        // Android 9(P) 이하에서는 외부 저장소 쓰기 권한이 필요
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+            val granted = ContextCompat.checkSelfPermission(
+                this, Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!granted) {
+                pendingSaveAfterPermission = true
+                pendingSaveMosaic = mosaicRegion
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                    REQ_WRITE_STORAGE
+                )
+                return
+            }
+        }
+
+        // 레이아웃이 완전히 잡힌 뒤(폭/높이 확정) 캡처합니다.
+        val scroll = findViewById<NestedScrollView?>(R.id.rootLayout)
+        val rootForPost = scroll ?: window.decorView.rootView
+        rootForPost.post {
+            val content: View
+            val padL: Int
+            val padT: Int
+            val padR: Int
+            val padB: Int
+            val finalW: Int
+
+            if (scroll != null && scroll.childCount > 0) {
+                content = scroll.getChildAt(0)
+                val edgePad = (18 * resources.displayMetrics.density).roundToInt()
+                padL = edgePad
+                padT = edgePad
+                padR = edgePad
+                padB = edgePad
+                finalW = scroll.width
+            } else {
+                content = window.decorView.rootView
+                padL = 0; padT = 0; padR = 0; padB = 0
+                finalW = content.width
+            }
+
+            if (finalW <= 0) {
+                Toast.makeText(this, getString(R.string.screen_not_ready), Toast.LENGTH_SHORT).show()
+                return@post
+            }
+
+            val contentW = (finalW - padL - padR).coerceAtLeast(1)
+
+            val oldL = content.left
+            val oldT = content.top
+            val oldR = content.right
+            val oldB = content.bottom
+
+            val wSpec = View.MeasureSpec.makeMeasureSpec(contentW, View.MeasureSpec.EXACTLY)
+            val hSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+            content.measure(wSpec, hSpec)
+            content.layout(0, 0, content.measuredWidth, content.measuredHeight)
+
+            val fullH = (content.measuredHeight + padT + padB).coerceAtLeast(1)
+
+            val maxPixels = 12_000_000L
+            val pixels = finalW.toLong() * fullH.toLong()
+            val scale = if (pixels > maxPixels) {
+                sqrt(maxPixels.toDouble() / pixels.toDouble()).toFloat()
+            } else {
+                1.0f
+            }
+
+            val bmpW = (finalW * scale).toInt().coerceAtLeast(1)
+            val bmpH = (fullH * scale).toInt().coerceAtLeast(1)
+
+            val bitmap = Bitmap.createBitmap(bmpW, bmpH, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+
+            canvas.drawColor(ContextCompat.getColor(this, R.color.bg_screen))
+
+            if (scale != 1.0f) {
+                canvas.scale(scale, scale)
+            }
+
+            canvas.save()
+            canvas.translate(padL.toFloat(), padT.toFloat())
+            content.draw(canvas)
+            canvas.restore()
+
+            if (mosaicRegion && regionText.visibility == View.VISIBLE && !regionText.text.isNullOrBlank()) {
+                applyRegionMosaic(bitmap, content, regionText, padL, padT, scale)
+            }
+
+            content.layout(oldL, oldT, oldR, oldB)
+
+            lifecycleScope.launch(Dispatchers.IO) {
+                val uri = try {
+                    saveBitmapToDownloads(bitmap)
+                } finally {
+                    bitmap.recycle()
+                }
+
+                withContext(Dispatchers.Main) {
+                    if (uri != null) {
+                        lastSavedImageUri = uri
+                        shareImageButton.isEnabled = true
+                        val msgRes = if (mosaicRegion) R.string.image_saved_mosaic_downloads else R.string.image_saved_downloads
+                        Toast.makeText(this@MainActivity, getString(msgRes), Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this@MainActivity, getString(R.string.image_save_failed), Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun applyRegionMosaic(
+        bitmap: Bitmap,
+        rootContent: View,
+        target: TextView,
+        padL: Int,
+        padT: Int,
+        scale: Float
+    ) {
+        var relLeft = 0
+        var relTop = 0
+        var v: View? = target
+        while (v != null && v !== rootContent) {
+            relLeft += v.left
+            relTop += v.top
+            v = v.parent as? View
+        }
+        if (v !== rootContent) return
+
+        val text = target.text?.toString().orEmpty()
+        val textWidth = target.paint.measureText(text)
+        val density = resources.displayMetrics.density
+        val hMargin = 10f * density
+        val vMargin = 3f * density
+
+        val centerX = relLeft + target.width / 2f
+        val boxLeft = maxOf(relLeft.toFloat(), centerX - textWidth / 2f - hMargin)
+        val boxRight = minOf((relLeft + target.width).toFloat(), centerX + textWidth / 2f + hMargin)
+        val boxTop = (relTop - vMargin).coerceAtLeast(0f)
+        val boxBottom = (relTop + target.height + vMargin)
+
+        val x1 = ((padL + boxLeft) * scale).toInt().coerceIn(0, bitmap.width - 1)
+        val y1 = ((padT + boxTop) * scale).toInt().coerceIn(0, bitmap.height - 1)
+        val x2 = ((padL + boxRight) * scale).toInt().coerceIn(x1 + 1, bitmap.width)
+        val y2 = ((padT + boxBottom) * scale).toInt().coerceIn(y1 + 1, bitmap.height)
+
+        val blockSize = maxOf((12 * density * scale).roundToInt(), 14)
+        val canvas = Canvas(bitmap)
+        val paint = Paint()
+
+        var y = y1
+        while (y < y2) {
+            val cellBottom = minOf(y + blockSize, y2)
+            var x = x1
+            while (x < x2) {
+                val cellRight = minOf(x + blockSize, x2)
+                var sumR = 0L
+                var sumG = 0L
+                var sumB = 0L
+                var count = 0L
+                for (py in y until cellBottom) {
+                    for (px in x until cellRight) {
+                        val c = bitmap.getPixel(px, py)
+                        sumR += Color.red(c)
+                        sumG += Color.green(c)
+                        sumB += Color.blue(c)
+                        count++
+                    }
+                }
+                if (count > 0) {
+                    paint.color = Color.rgb(
+                        (sumR / count).toInt(),
+                        (sumG / count).toInt(),
+                        (sumB / count).toInt()
+                    )
+                    canvas.drawRect(x.toFloat(), y.toFloat(), cellRight.toFloat(), cellBottom.toFloat(), paint)
+                }
+                x = cellRight
+            }
+            y = cellBottom
+        }
+    }
+
+    private fun shareLastSavedImage() {
+        val uri = lastSavedImageUri
+        if (uri == null) {
+            Toast.makeText(this, getString(R.string.save_image_first), Toast.LENGTH_SHORT).show()
+            return
+        }
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "image/png"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        try {
+            startActivity(Intent.createChooser(intent, getString(R.string.share_chooser_title)))
+        } catch (_: Exception) {
+            Toast.makeText(this, getString(R.string.no_share_app), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun saveBitmapToDownloads(bitmap: Bitmap): Uri? {
+        val filename = "wweather_${System.currentTimeMillis()}.png"
+
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val values = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                    put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                    put(MediaStore.MediaColumns.IS_PENDING, 1)
+                }
+                val resolver = contentResolver
+                val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                    ?: return null
+
+                val saved = try {
+                    resolver.openOutputStream(uri, "w")?.use { out ->
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                    } ?: false
+                } catch (t: Throwable) {
+                    runCatching { resolver.delete(uri, null, null) }
+                    throw t
+                }
+                if (!saved) {
+                    runCatching { resolver.delete(uri, null, null) }
+                    return null
+                }
+
+                values.clear()
+                values.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                resolver.update(uri, values, null, null)
+                uri
+            } else {
+                val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                if (!dir.exists()) dir.mkdirs()
+                val file = File(dir, filename)
+                file.outputStream().use { out ->
+                    if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)) {
+                        return null
+                    }
+                }
+                FileProvider.getUriForFile(this, "${packageName}.fileprovider", file)
+            }
+        } catch (t: Throwable) {
+            logE("saveBitmapToDownloads error", t)
+            null
+        }
+    }
+
+    /* ---------- 권한 ---------- */
+    /* Google Play 위치 정책(targetSdk 37)에 따라 시/군/구 날씨는 ACCESS_COARSE_LOCATION만 전경 1회로 사용합니다. */
+    private fun hasLocationPermission(): Boolean = ContextCompat.checkSelfPermission(
+        this, Manifest.permission.ACCESS_COARSE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+
+    private fun askForOneTimeLocation() {
+        val view = layoutInflater.inflate(R.layout.dialog_location_prompt, null)
+        val badge = view.findViewById<TextView>(R.id.locationPromptBadge)
+        val title = view.findViewById<TextView>(R.id.locationPromptTitle)
+        val body = view.findViewById<TextView>(R.id.locationPromptBody)
+        val positiveBtn = view.findViewById<Button>(R.id.locationPromptPositiveButton)
+        val negativeBtn = view.findViewById<Button>(R.id.locationPromptNegativeButton)
+
+        badge.setText(R.string.location_consent_badge)
+        title.setText(R.string.location_consent_title)
+        body.setText(R.string.location_consent_message)
+        positiveBtn.setText(R.string.location_yes_confirm)
+        negativeBtn.setText(R.string.cancel_action)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(view)
+            .create()
+
+        positiveBtn.setOnClickListener {
+            dialog.dismiss()
+            if (!isLocationEnabled()) {
+                showGpsOffDialog()
+            } else if (hasLocationPermission()) {
+                beginLocationRequest()
+            } else {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION),
+                    REQ_LOCATION
+                )
+            }
+        }
+        negativeBtn.setOnClickListener { dialog.dismiss() }
+        dialog.show()
+    }
+
+    private fun showGpsOffDialog() {
+        val view = layoutInflater.inflate(R.layout.dialog_location_prompt, null)
+        val badge = view.findViewById<TextView>(R.id.locationPromptBadge)
+        val title = view.findViewById<TextView>(R.id.locationPromptTitle)
+        val body = view.findViewById<TextView>(R.id.locationPromptBody)
+        val positiveBtn = view.findViewById<Button>(R.id.locationPromptPositiveButton)
+        val negativeBtn = view.findViewById<Button>(R.id.locationPromptNegativeButton)
+
+        badge.setText(R.string.gps_off_badge)
+        title.setText(R.string.gps_off_title)
+        body.setText(R.string.gps_off_message)
+        positiveBtn.setText(R.string.open_location_settings)
+        negativeBtn.setText(R.string.cancel_action)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(view)
+            .create()
+
+        positiveBtn.setOnClickListener {
+            dialog.dismiss()
+            startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+        }
+        negativeBtn.setOnClickListener { dialog.dismiss() }
+        dialog.show()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            REQ_WRITE_STORAGE -> {
+                val granted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+                if (granted && pendingSaveAfterPermission) {
+                    val mosaic = pendingSaveMosaic
+                    pendingSaveAfterPermission = false
+                    pendingSaveMosaic = false
+                    saveCurrentScreenImage(mosaicRegion = mosaic)
+                } else {
+                    pendingSaveAfterPermission = false
+                    pendingSaveMosaic = false
+                    Toast.makeText(this, getString(R.string.storage_permission_needed), Toast.LENGTH_SHORT).show()
+                }
+            }
+            REQ_LOCATION -> {
+                if (hasLocationPermission() && isLocationEnabled()) beginLocationRequest()
+                else {
+                    currentWeatherMode = "NO_LOCATION"
+                    currentStatusResult = "START"
+                    statusText.text = getString(R.string.no_location_selected)
+                    retryStatusText.text = getString(R.string.status_start)
+                }
+            }
+        }
+    }
+
+    private fun beginLocationRequest() {
+        if (isRefreshing) cancelCurrentWeatherRequest()
+        val requestId = ++locationRequestSeq
+        showLoading(getString(R.string.loading_location))
+        isRefreshing = true
+        regionText.text = getString(R.string.checking_location)
+        statusText.text = getString(R.string.loading_location)
+        retryStatusText.text = getString(R.string.status_in_progress)
+        fetchLocation(requestId)
+    }
+
+    private fun onLocationFailure(
+        message: String? = null,
+        outsideKorea: Boolean = false,
+        showRecovery: Boolean = true
+    ) {
+        isRefreshing = false
+        hideLoading()
+        currentWeatherMode = if (outsideKorea) "OUTSIDE_KOREA" else "LOC_ERROR"
+        currentStatusResult = "FAIL"
+        statusText.text = message ?: getString(R.string.location_not_found)
+        retryStatusText.text = getString(R.string.status_fail)
+        regionText.text = getString(R.string.location_select_manual_hint)
+        if (showRecovery && !outsideKorea && !isFinishing && !isDestroyed) {
+            showLocationFailureDialog()
+        }
+    }
+
+    private fun showLocationFailureDialog() {
+        val hasLastSaved = prefs.contains(PREF_LAST_LAT) && prefs.contains(PREF_LAST_LON)
+        val lastAreaLabel = prefs.getString(PREF_LAST_AREA, null)
+            ?.takeIf { it.isNotBlank() }
+            ?: getString(R.string.region_saved_fallback)
+
+        val message = if (hasLastSaved) {
+            getString(R.string.location_failed_message_with_last, lastAreaLabel)
+        } else {
+            getString(R.string.location_failed_message)
+        }
+
+        val builder = AlertDialog.Builder(this)
+            .setTitle(R.string.location_failed_title)
+            .setMessage(message)
+            .setPositiveButton(R.string.open_settings) { _, _ -> showRegionPickerDialog() }
+            .setNegativeButton(R.string.retry_action) { _, _ ->
+                if (hasLocationPermission() && isLocationEnabled()) {
+                    beginLocationRequest()
+                } else {
+                    askForOneTimeLocation()
+                }
+            }
+
+        if (hasLastSaved) {
+            builder.setNeutralButton(R.string.use_previous_location) { _, _ ->
+                startWeatherAtSavedLocation()
+            }
+        }
+        builder.show()
+    }
+
+    private fun isLocationEnabled(): Boolean {
+        val lm = getSystemService(LOCATION_SERVICE) as LocationManager
+        return LocationManagerCompat.isLocationEnabled(lm)
+    }
+
+    /** 대한민국 근처 좌표만 기상청 국내 관측소로 매칭합니다. 해외 에뮬레이터 좌표가 독도로 오인되는 현상을 방지합니다. */
+    private fun isNearKorea(lat: Double, lon: Double): Boolean =
+        lat in 32.0..40.0 && lon in 124.0..133.0
+
+    /* ---------- 위치 (재접속 시 활성 대략 위치 1회 조회 -> 네트워크/Fused -> 최근 위치 폴백) ---------- */
+    @Suppress("MissingPermission")
+    private fun fetchLocation(requestId: Long) {
+        if (!hasLocationPermission()) {
+            onLocationFailure()
+            return
+        }
+
+        logD("location start (coarse foreground 1-shot)")
+        // maxUpdateAgeMillis=15초로 설정해 Android의 Wi-Fi 스캔 횟수 제한(스롤틀링) 환경에서도 안정적으로 수신합니다.
+        val request = CurrentLocationRequest.Builder()
+            .setPriority(Priority.PRIORITY_BALANCED_POWER_ACCURACY)
+            .setMaxUpdateAgeMillis(15_000L)
+            .setDurationMillis(7_000L)
+            .build()
+
+        val cts = CancellationTokenSource()
+        fusedCancellationSource = cts
+        var complete = false
+        val timeout = Runnable {
+            if (!complete && requestId == locationRequestSeq) {
+                complete = true
+                cts.cancel()
+                fusedCancellationSource = null
+                locationTimeoutRunnable = null
+                logD("fused current location timeout; trying system providers")
+                fetchSystemLocation(requestId)
+            }
+        }
+        locationTimeoutRunnable = timeout
+        timeHandler.postDelayed(timeout, 7_500L)
+
+        try {
+            fusedLocationClient.getCurrentLocation(request, cts.token)
+                .addOnSuccessListener { cur ->
+                    if (complete || requestId != locationRequestSeq) return@addOnSuccessListener
+                    complete = true
+                    timeHandler.removeCallbacks(timeout)
+                    locationTimeoutRunnable = null
+                    fusedCancellationSource = null
+                    if (cur != null && isUsableLocation(cur, 120L, 100_000f)) {
+                        logLocation("fused current", cur)
+                        onLocationReady(cur, requestId)
+                    } else {
+                        logD("fused current returned null/unusable; trying system providers")
+                        fetchSystemLocation(requestId)
+                    }
+                }
+                .addOnFailureListener { error ->
+                    if (complete || requestId != locationRequestSeq) return@addOnFailureListener
+                    complete = true
+                    timeHandler.removeCallbacks(timeout)
+                    locationTimeoutRunnable = null
+                    fusedCancellationSource = null
+                    logE("fused current location failed", error)
+                    fetchSystemLocation(requestId)
+                }
+        } catch (error: Exception) {
+            complete = true
+            timeHandler.removeCallbacks(timeout)
+            locationTimeoutRunnable = null
+            fusedCancellationSource = null
+            logE("fused current location exception", error)
+            if (requestId == locationRequestSeq) fetchSystemLocation(requestId)
+        }
+    }
+
+    /** Play Services가 응답하지 않을 때 NETWORK_PROVIDER / FUSED_PROVIDER를 순차 조회하고, 실패 시 30분 내 lastLocation으로 폴백합니다. */
+    @Suppress("MissingPermission")
+    private fun fetchSystemLocation(requestId: Long) {
+        if (requestId != locationRequestSeq) return
+        val manager = getSystemService(LOCATION_SERVICE) as LocationManager
+        val candidates = buildList {
+            add(LocationManager.NETWORK_PROVIDER)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                add(LocationManager.FUSED_PROVIDER)
+            }
+        }
+        val providers = candidates.filter { p ->
+            runCatching { manager.isProviderEnabled(p) }.getOrDefault(false)
+        }
+
+        fun fallbackToLastLocation() {
+            if (requestId != locationRequestSeq) return
+            try {
+                fusedLocationClient.lastLocation
+                    .addOnSuccessListener { last ->
+                        if (requestId != locationRequestSeq) return@addOnSuccessListener
+                        val systemLast = candidates.mapNotNull { p ->
+                            runCatching { manager.getLastKnownLocation(p) }.getOrNull()
+                        }
+                        val best = (listOfNotNull(last) + systemLast)
+                            .filter { isUsableLocation(it, 1_800L, 100_000f) }
+                            .minByOrNull { locationAgeSeconds(it) ?: Long.MAX_VALUE }
+                        if (best != null) {
+                            logLocation("fallback last", best)
+                            onLocationReady(best, requestId)
+                        } else {
+                            logD("all location providers returned no usable location")
+                            onLocationFailure(getString(R.string.location_not_found))
+                        }
+                    }
+                    .addOnFailureListener {
+                        if (requestId != locationRequestSeq) return@addOnFailureListener
+                        onLocationFailure(getString(R.string.location_not_found))
+                    }
+            } catch (_: Exception) {
+                if (requestId == locationRequestSeq) onLocationFailure(getString(R.string.location_not_found))
+            }
+        }
+
+        fun attempt(index: Int) {
+            if (requestId != locationRequestSeq) return
+            if (index >= providers.size) {
+                fallbackToLastLocation()
+                return
+            }
+            val providerName = providers[index]
+            val cancellation = CancellationSignal()
+            systemLocationCancellation = cancellation
+            var complete = false
+            val timeoutMs = if (providerName == LocationManager.NETWORK_PROVIDER) 5_000L else 4_000L
+            val timeout = Runnable {
+                if (!complete && requestId == locationRequestSeq) {
+                    complete = true
+                    cancellation.cancel()
+                    systemLocationCancellation = null
+                    locationTimeoutRunnable = null
+                    logD("system $providerName location timeout")
+                    attempt(index + 1)
+                }
+            }
+            locationTimeoutRunnable = timeout
+            timeHandler.postDelayed(timeout, timeoutMs)
+            try {
+                LocationManagerCompat.getCurrentLocation(
+                    manager, providerName, cancellation, ContextCompat.getMainExecutor(this)
+                ) { found ->
+                    if (complete || requestId != locationRequestSeq) return@getCurrentLocation
+                    complete = true
+                    timeHandler.removeCallbacks(timeout)
+                    locationTimeoutRunnable = null
+                    systemLocationCancellation = null
+                    if (found != null && isUsableLocation(found, 300L, 100_000f)) {
+                        logLocation("system $providerName", found)
+                        onLocationReady(found, requestId)
+                    } else {
+                        attempt(index + 1)
+                    }
+                }
+            } catch (error: Exception) {
+                complete = true
+                timeHandler.removeCallbacks(timeout)
+                locationTimeoutRunnable = null
+                systemLocationCancellation = null
+                logE("system $providerName location exception", error)
+                attempt(index + 1)
+            }
+        }
+        attempt(0)
+    }
+
+    private fun locationAgeSeconds(loc: Location): Long? {
+        return try {
+            val now = SystemClock.elapsedRealtimeNanos()
+            val ageNanos = now - loc.elapsedRealtimeNanos
+            (ageNanos / 1_000_000_000L).coerceAtLeast(0)
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    private fun isUsableLocation(
+        loc: Location,
+        maxAgeSec: Long = 180L,
+        maxAccM: Float = 100_000f
+    ): Boolean {
+        val ageSec = locationAgeSeconds(loc)
+        val acc = try { loc.accuracy } catch (_: Throwable) { Float.MAX_VALUE }
+
+        val okAge = ageSec == null || ageSec <= maxAgeSec
+        val okAcc = acc.isFinite() && acc <= maxAccM
+
+        return okAge && okAcc
+    }
+
+    private fun logLocation(tag: String, loc: Location) {
+        val ageSec = locationAgeSeconds(loc)
+        val acc = try { loc.accuracy } catch (_: Throwable) { Float.NaN }
+        logD("location $tag accuracy=${acc}m ageSec=${ageSec ?: -1} provider=${loc.provider}")
+    }
+
+    private fun onLocationReady(loc: Location, requestId: Long) {
+        if (requestId != locationRequestSeq) return
+        val domestic = isNearKorea(loc.latitude, loc.longitude)
+        // 미국 등 에뮬레이터의 해외 GPS 좌표를 한국 관측소(특히 독도)에 잘못 매칭하지 않습니다.
+        if (!domestic && provider == WeatherProvider.KMA) {
+            logD("KMA unsupported location: outside Korean region")
+            onLocationFailure(getString(R.string.location_outside_korea), outsideKorea = true, showRecovery = false)
+            return
+        }
+        val station = if (domestic) nearestStation(loc.latitude, loc.longitude).first else null
+        if (station != null) logD("nearest station=${station.id} (${station.name})")
+
+        geocodeJob?.cancel()
+        geocodeJob = lifecycleScope.launch {
+            val area = if (domestic) {
+                resolveAreaName(loc.latitude, loc.longitude)
+            } else {
+                getString(R.string.region_overseas)
+            }
+            if (requestId != locationRequestSeq) return@launch
+
+            prefs.edit()
+                .putInt(PREF_LAST_STN, station?.id ?: 0)
+                .putFloat(PREF_LAST_LAT, loc.latitude.toFloat())
+                .putFloat(PREF_LAST_LON, loc.longitude.toFloat())
+                .putString(PREF_LAST_AREA, area)
+                .remove(PREF_SELECTED_STN).remove(PREF_MANUAL_LAT).remove(PREF_MANUAL_LON)
+                .remove(PREF_MANUAL_NAME).putBoolean(PREF_PIN_ENABLED, false)
+                .apply()
+
+            if (provider == WeatherProvider.OPEN_METEO) {
+                startOpenMeteoWeather(loc.latitude, loc.longitude, area)
+            } else if (station != null) {
+                startKmaWeather(station.id, area, station.name)
+            }
+        }
+    }
+
+    /**
+     * 단순 시군구 중심점 거리 계산(예: 강남구 남부에서 성남시 중심점이 더 가깝게 나오는 현상)을 보완하기 위해
+     * 기기의 Geocoder로 실제 행정구역(예: 서울 강남구)을 우선 조회하고, 실패 시 CSV 최근접 지역으로 폴백합니다.
+     */
+    private suspend fun resolveAreaName(lat: Double, lon: Double): String {
+        val en = isEnglishLocale()
+        val geocoderLocale = if (en) Locale.ENGLISH else Locale.KOREA
+        val geocoded = withTimeoutOrNull(1_500L) {
+            withContext(Dispatchers.IO) {
+                try {
+                    if (!Geocoder.isPresent()) return@withContext null
+                    val geocoder = Geocoder(this@MainActivity, geocoderLocale)
+                    val address: Address? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        suspendCancellableCoroutine { cont ->
+                            geocoder.getFromLocation(lat, lon, 1, object : Geocoder.GeocodeListener {
+                                override fun onGeocode(addresses: MutableList<Address>) {
+                                    if (cont.isActive) cont.resume(addresses.firstOrNull())
+                                }
+
+                                override fun onError(errorMessage: String?) {
+                                    if (cont.isActive) cont.resume(null)
+                                }
+                            })
+                        }
+                    } else {
+                        @Suppress("DEPRECATION")
+                        geocoder.getFromLocation(lat, lon, 1)?.firstOrNull()
+                    }
+                    formatAdminArea(address, en)
+                } catch (cancel: CancellationException) {
+                    throw cancel
+                } catch (_: Throwable) {
+                    null
+                }
+            }
+        }
+        if (!geocoded.isNullOrBlank()) {
+            logD("area resolved via=geocoder -> $geocoded")
+            return geocoded
+        }
+        val fallback = LocalRegionRepository.nearest(csvRegions, lat, lon)?.name
+            ?: getString(R.string.region_near_current)
+        logD("area resolved via=csv-fallback -> $fallback")
+        return fallback
+    }
+
+    private fun formatAdminArea(address: Address?, isEnglish: Boolean): String? {
+        if (address == null) return null
+        val adminRaw = address.adminArea?.trim().orEmpty()
+        val locality = address.locality?.trim().orEmpty()
+        val subLocality = address.subLocality?.trim().orEmpty()
+
+        if (isEnglish) {
+            val parts = linkedSetOf<String>()
+            if (subLocality.isNotEmpty()) parts.add(subLocality)
+            if (locality.isNotEmpty() && locality != subLocality) parts.add(locality)
+            if (adminRaw.isNotEmpty() && adminRaw != locality && adminRaw != subLocality) parts.add(adminRaw)
+            return parts.joinToString(", ").takeIf { it.isNotBlank() }
+        }
+
+        val admin = when (adminRaw) {
+            "서울특별시" -> "서울"
+            "부산광역시" -> "부산"
+            "대구광역시" -> "대구"
+            "인천광역시" -> "인천"
+            "광주광역시" -> "광주"
+            "대전광역시" -> "대전"
+            "울산광역시" -> "울산"
+            "세종특별자치시" -> "세종"
+            "경기도" -> "경기"
+            "강원특별자치도", "강원도" -> "강원"
+            "충청북도" -> "충북"
+            "충청남도" -> "충남"
+            "전북특별자치도", "전라북도" -> "전북"
+            "전라남도" -> "전남"
+            "경상북도" -> "경북"
+            "경상남도" -> "경남"
+            "제주특별자치도" -> "제주"
+            else -> adminRaw
+        }
+
+        val parts = linkedSetOf<String>()
+        if (admin.isNotEmpty()) parts.add(admin)
+        if (locality.isNotEmpty() && locality != adminRaw && locality != admin) {
+            parts.add(locality)
+        }
+        if (subLocality.isNotEmpty() && subLocality != locality && subLocality != adminRaw && subLocality != admin) {
+            parts.add(subLocality)
+        }
+        return parts.joinToString(" ").takeIf { it.isNotBlank() }
+    }
+
+    private fun hasPinnedStationSelection(): Boolean =
+        prefs.getBoolean(PREF_PIN_ENABLED, false) && prefs.getInt(PREF_SELECTED_STN, 0) > 0
+
+    private fun hasActiveStationSelection(): Boolean = prefs.getInt(PREF_SELECTED_STN, 0) > 0
+
+    private fun selectedStationId(): Int = prefs.getInt(PREF_SELECTED_STN, 0)
+
+    private fun findStationById(stationId: Int): Station? =
+        StationRepo.stations.firstOrNull { it.id == stationId }
+
+    private fun applyStationSelection(station: Station, isPinned: Boolean = false) {
+        prefs.edit()
+            .putInt(PREF_SELECTED_STN, station.id)
+            .putInt(PREF_LAST_STN, station.id)
+            .putFloat(PREF_MANUAL_LAT, station.lat.toFloat())
+            .putFloat(PREF_MANUAL_LON, station.lon.toFloat())
+            .putString(PREF_MANUAL_NAME, station.name)
+            .putBoolean(PREF_PIN_ENABLED, isPinned)
+            .apply()
+        startWeatherAtSavedLocation()
+    }
+
+    private fun clearPinnedAndResetToDefault() {
+        prefs.edit().remove(PREF_SELECTED_STN).remove(PREF_LAST_STN)
+            .remove(PREF_MANUAL_LAT).remove(PREF_MANUAL_LON).remove(PREF_MANUAL_NAME)
+            .remove(PREF_LAST_LAT).remove(PREF_LAST_LON).remove(PREF_LAST_AREA)
+            .putBoolean(PREF_PIN_ENABLED, false).apply()
+        cancelCurrentWeatherRequest()
+        initializeIdleWeatherUi()
+        Toast.makeText(this, getString(R.string.region_toast_reset), Toast.LENGTH_SHORT).show()
+    }
+
+    private fun showRegionPickerDialog() {
+        if (provider == WeatherProvider.OPEN_METEO) {
+            showOpenMeteoRegionPicker()
+            return
+        }
+        val root = layoutInflater.inflate(R.layout.dialog_region_picker, null)
+        val searchEditText = root.findViewById<EditText>(R.id.regionSearchEditText)
+        val numberPicker = root.findViewById<NumberPicker>(R.id.regionNumberPicker)
+        val pinnedText = root.findViewById<TextView>(R.id.regionDialogPinnedText)
+        val searchButton = root.findViewById<Button>(R.id.regionSearchButton)
+        val closeButton = root.findViewById<Button>(R.id.regionCloseButton)
+        val resetButton = root.findViewById<Button>(R.id.regionResetButton)
+        val pinButton = root.findViewById<Button>(R.id.regionPinButton)
+        val confirmButton = root.findViewById<Button>(R.id.regionConfirmButton)
+
+        val allStations = StationRepo.stations.distinctBy { it.id }
+        var filteredStations = allStations
+        var hasSearchResult = true
+        val currentStationId = when {
+            hasActiveStationSelection() -> selectedStationId()
+            else -> prefs.getInt(PREF_LAST_STN, 0)
+        }
+
+        fun updatePinnedText() {
+            val pinnedName = findStationById(selectedStationId())?.name
+            pinnedText.text = if (hasPinnedStationSelection() && !pinnedName.isNullOrBlank()) {
+                getString(R.string.region_pinned_value, pinnedName)
+            } else {
+                getString(R.string.region_pinned_none)
+            }
+        }
+
+        fun updatePicker(targetStationId: Int? = null) {
+            val displayValues = filteredStations.map { "${it.name} (stn=${it.id})" }.toTypedArray()
+            numberPicker.displayedValues = null
+            numberPicker.value = 0
+            if (displayValues.isEmpty()) {
+                hasSearchResult = false
+                numberPicker.minValue = 0
+                numberPicker.maxValue = 0
+                numberPicker.wrapSelectorWheel = false
+                numberPicker.displayedValues = arrayOf(getString(R.string.region_no_results))
+                return
+            }
+            hasSearchResult = true
+            numberPicker.minValue = 0
+            numberPicker.maxValue = displayValues.lastIndex
+            numberPicker.wrapSelectorWheel = false
+            numberPicker.displayedValues = displayValues
+            val index = targetStationId?.let { id -> filteredStations.indexOfFirst { it.id == id } }?.takeIf { it >= 0 } ?: 0
+            numberPicker.value = index
+        }
+
+        fun filterStations() {
+            val query = searchEditText.text?.toString()?.trim().orEmpty()
+            filteredStations = if (query.isBlank()) {
+                allStations
+            } else {
+                allStations.filter { it.name.contains(query, ignoreCase = true) }
+            }
+            updatePicker(targetStationId = currentStationId)
+        }
+
+        updatePinnedText()
+        updatePicker(targetStationId = currentStationId)
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.region_picker_title)
+            .setView(root)
+            .create()
+
+        searchButton.setOnClickListener { filterStations() }
+        searchEditText.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: Editable?) {
+                filterStations()
+            }
+        })
+
+        confirmButton.setOnClickListener {
+            if (!hasSearchResult) {
+                Toast.makeText(this, getString(R.string.region_toast_no_results), Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            val selected = filteredStations.getOrNull(numberPicker.value)
+            if (selected != null) {
+                prefs.edit().putBoolean(PREF_PIN_ENABLED, false).apply()
+                applyStationSelection(selected, isPinned = false)
+                Toast.makeText(this, getString(R.string.region_toast_selected, selected.name), Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
+            }
+        }
+
+        pinButton.setOnClickListener {
+            if (!hasSearchResult) {
+                Toast.makeText(this, getString(R.string.region_toast_no_results), Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            val selected = filteredStations.getOrNull(numberPicker.value)
+            if (selected != null) {
+                prefs.edit()
+                    .putInt(PREF_SELECTED_STN, selected.id)
+                    .putBoolean(PREF_PIN_ENABLED, true)
+                    .apply()
+                updatePinnedText()
+                applyStationSelection(selected, isPinned = true)
+                Toast.makeText(this, getString(R.string.region_toast_pinned, selected.name), Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
+            }
+        }
+
+        resetButton.setOnClickListener {
+            dialog.dismiss()
+            clearPinnedAndResetToDefault()
+        }
+
+        closeButton.setOnClickListener { dialog.dismiss() }
+        dialog.show()
+    }
+
+    /** Open-Meteo manual location list is read from the supplied CSV, with keyword search and pinning. */
+    private fun showOpenMeteoRegionPicker() {
+        val root = layoutInflater.inflate(R.layout.dialog_region_picker, null)
+        val searchField = root.findViewById<EditText>(R.id.regionSearchEditText)
+        val picker = root.findViewById<NumberPicker>(R.id.regionNumberPicker)
+        val pinnedLabel = root.findViewById<TextView>(R.id.regionDialogPinnedText)
+        val all = csvRegions
+        if (all.isEmpty()) {
+            Toast.makeText(this, getString(R.string.region_csv_error), Toast.LENGTH_LONG).show()
+            return
+        }
+        var filtered = all
+        fun updatePinned() {
+            pinnedLabel.text = if (hasPinnedStationSelection()) {
+                val saved = prefs.getString(PREF_MANUAL_NAME, null) ?: getString(R.string.region_selected_prefix)
+                getString(R.string.region_pinned_value, saved)
+            } else getString(R.string.region_pinned_none)
+        }
+        fun filter() {
+            val word = searchField.text?.toString()?.trim().orEmpty()
+            filtered = if (word.isBlank()) all else all.filter { it.name.contains(word, ignoreCase = true) }
+            picker.displayedValues = null
+            picker.value = 0
+            picker.minValue = 0
+            picker.maxValue = (filtered.size - 1).coerceAtLeast(0)
+            picker.wrapSelectorWheel = false
+            picker.displayedValues = if (filtered.isEmpty()) arrayOf(getString(R.string.region_no_results)) else filtered.map { it.name }.toTypedArray()
+            val last = prefs.getString(PREF_MANUAL_NAME, null)
+            val selectedIndex = filtered.indexOfFirst { it.name == last }
+            picker.value = if (selectedIndex >= 0) selectedIndex else 0
+        }
+        updatePinned()
+        filter()
+        val dialog = AlertDialog.Builder(this).setTitle(R.string.region_picker_open_title).setView(root).create()
+        root.findViewById<Button>(R.id.regionSearchButton).setOnClickListener { filter() }
+        searchField.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: Editable?) { filter() }
+        })
+        fun select(pin: Boolean) {
+            val region = filtered.getOrNull(picker.value) ?: run {
+                Toast.makeText(this, getString(R.string.region_toast_no_results), Toast.LENGTH_SHORT).show()
+                return
+            }
+            val station = nearestStation(region.latitude, region.longitude).first
+            prefs.edit()
+                .putInt(PREF_SELECTED_STN, station.id)
+                .putInt(PREF_LAST_STN, station.id)
+                .putFloat(PREF_MANUAL_LAT, region.latitude.toFloat())
+                .putFloat(PREF_MANUAL_LON, region.longitude.toFloat())
+                .putString(PREF_MANUAL_NAME, region.name)
+                .putBoolean(PREF_PIN_ENABLED, pin)
+                .apply()
+            dialog.dismiss()
+            startOpenMeteoWeather(region.latitude, region.longitude, region.name)
+        }
+        root.findViewById<Button>(R.id.regionConfirmButton).setOnClickListener { select(false) }
+        root.findViewById<Button>(R.id.regionPinButton).setOnClickListener { select(true) }
+        root.findViewById<Button>(R.id.regionResetButton).setOnClickListener {
+            dialog.dismiss()
+            clearPinnedAndResetToDefault()
+        }
+        root.findViewById<Button>(R.id.regionCloseButton).setOnClickListener { dialog.dismiss() }
+        dialog.show()
+    }
+
+    /* ---------- 관측소 ---------- */
+    private fun nearestStation(lat: Double, lon: Double): Pair<Station, Double> {
+        if (StationRepo.stations.isEmpty()) return Station(0, "UNKNOWN", 0.0, 0.0) to Double.MAX_VALUE
+        var best = StationRepo.stations.first()
+        var min = Double.MAX_VALUE
+        for (s in StationRepo.stations) {
+            val d = haversine(lat, lon, s.lat, s.lon)
+            if (d < min) { min = d; best = s }
+        }
+        return best to min
+    }
+
+    private fun haversine(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val R = 6371000.0
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+        val a = sin(dLat / 2).pow(2) +
+                cos(Math.toRadians(lat1)) *
+                cos(Math.toRadians(lat2)) *
+                sin(dLon / 2).pow(2)
+        return 2 * R * atan2(sqrt(a), sqrt(1 - a))
+    }
+
+    /* ---------- 공용: 칼럼 인덱스 기반 추출 (1-based) ---------- */
+    private fun extractByColumnIndex(text: String, columnIndex1Based: Int): String? {
+        if (columnIndex1Based <= 0) return null
+        val tsRegex = Regex("""\b\d{12}\b""")
+        var last: String? = null
+
+        text.lineSequence()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() && !it.startsWith("#") }
+            .forEach { line ->
+                if (tsRegex.containsMatchIn(line)) {
+                    val parts = line.split(Regex("""\s+"""))
+                    if (parts.size >= columnIndex1Based) {
+                        last = parts[columnIndex1Based - 1].trim()
+                    }
+                }
+            }
+        return last
+    }
+
+
+    /* ---------- 네트워크 & 캐시 유틸 ---------- */
+    private fun cacheFile(): File =
+        (getExternalFilesDir(null) ?: filesDir).resolve(CACHE_NAME)
+
+    private fun loadCacheText(stn: Int): String? {
+        return try {
+            if (prefs.getInt(PREF_CACHE_STN, 0) != stn) return null
+            val f = cacheFile()
+            if (f.exists() && f.length() > 0) f.readText(Charsets.UTF_8) else null
+        } catch (_: Exception) { null }
+    }
+
+    private fun saveCacheText(stn: Int, text: String) {
+        try {
+            cacheFile().writeText(text, Charsets.UTF_8)
+            prefs.edit()
+                .putInt(PREF_CACHE_STN, stn)
+                .putLong("aws_cache_time", System.currentTimeMillis())
+                .apply()
+        } catch (_: Exception) { /* ignore */ }
+    }
+
+    private fun hasKmaObservationRow(text: String): Boolean {
+        val tsRegex = Regex("""\b\d{12}\b""")
+        return text.lineSequence()
+            .map { it.trim() }
+            .any { it.isNotEmpty() && !it.startsWith("#") && tsRegex.containsMatchIn(it) }
+    }
+
+    private suspend fun fetchKmaAwsBodyOnce(
+        stn: Int,
+        tm2: String,
+        forceClose: Boolean
+    ): String? = withContext(Dispatchers.IO) {
+        val url = "https://apihub.kma.go.kr/api/typ01/cgi-bin/url/nph-aws2_min" +
+                "?tm2=$tm2&stn=$stn&disp=0&help=1&authKey=${URLEncoder.encode(BuildConfig.KMA_AUTH_KEY, "UTF-8")}"
+        try {
+            val reqBuilder = Request.Builder().url(url)
+            if (forceClose) reqBuilder.header("Connection", "close")
+            kmaAwsClient.newCall(reqBuilder.build()).execute().use { resp ->
+                val body = resp.body.string()
+                if (resp.isSuccessful && hasKmaObservationRow(body)) {
+                    body
+                } else {
+                    logD("aws2_min incomplete stn=$stn tm2=$tm2 http=${resp.code} len=${body.length}")
+                    null
+                }
+            }
+        } catch (cancel: CancellationException) {
+            throw cancel
+        } catch (t: Throwable) {
+            logE("aws2_min error stn=$stn tm2=$tm2", t)
+            null
+        }
+    }
+
+    private suspend fun fetchKmaAwsWithOffsets(
+        stn: Int,
+        offsets: IntArray
+    ): Pair<String, String>? {
+        for ((index, off) in offsets.withIndex()) {
+            val tm2 = kstTm2Minus(off)
+            val attemptTimeoutMs = if (index == 0) 3_800L else 5_500L
+            logD("aws2_min request attempt=${index + 1} stn=$stn tm2=$tm2")
+            val body = withTimeoutOrNull(attemptTimeoutMs) {
+                fetchKmaAwsBodyOnce(stn = stn, tm2 = tm2, forceClose = index > 0)
+            }
+            if (!body.isNullOrBlank()) {
+                return body to tm2
+            }
+            if (index < offsets.lastIndex) delay(150L)
+        }
+        return null
+    }
+
+    /* ---------- 기상청 AWS 통합 조회 (기압 · 온도 · 바람 · 습도 · 강수) ---------- */
+    private fun fetchKmaAws(stn: Int, seq: Long) {
+        weatherText.text = getString(R.string.weather_default)
+        awsRetryJob?.cancel()
+
+        awsJob = lifecycleScope.launch(Dispatchers.IO) {
+            // 1차 빠른 조회: -2분 우선, 미게시/지연 시 -10분 -> -15분 순으로 빠르게 폴백
+            val networkResult = fetchKmaAwsWithOffsets(stn, intArrayOf(2, 10, 15))
+
+            val usedCache: Boolean
+            val resolvedTm2: String
+            val textToParse: String? = if (networkResult != null) {
+                saveCacheText(stn, networkResult.first)
+                usedCache = false
+                resolvedTm2 = networkResult.second
+                networkResult.first
+            } else {
+                usedCache = true
+                resolvedTm2 = kstTm2Minus(2)
+                loadCacheText(stn)
+            }
+
+            if (textToParse.isNullOrBlank()) {
+                withContext(Dispatchers.Main) {
+                    if (seq != weatherRequestSeq || provider != WeatherProvider.KMA) return@withContext
+                    currentTempCelsius = Double.NaN
+                    currentPressureHpa = Double.NaN
+                    currentRainDecision = 4
+                    currentUsedCache = false
+                    currentCacheOld = false
+                    currentStatusResult = "FAIL"
+                    currentErrorDetail = "FETCH_FAILED"
+                    pressureText.text = getString(R.string.api_error, getString(R.string.api_fetch_failed))
+                    weatherText.setText(R.string.weather_rain_check_failed)
+                    retryStatusText.text = getString(R.string.status_fail)
+
+                    tempValueText.text = "-"
+                    windDirValueText.text = "-"
+                    lastWindDirectionDeg = Float.NaN
+                    updateWindDirectionCardinal(lastWindDirectionDeg)
+                    windSpeedValueText.text = "-"
+                    humidityValueText.text = "-"
+
+                    isRefreshing = false
+                    hideLoading()
+                    startKmaAwsSilentRetry(stn, seq)
+                }
+                return@launch
+            }
+
+            applyKmaAwsText(
+                stn = stn,
+                seq = seq,
+                tm2 = resolvedTm2,
+                textToParse = textToParse,
+                usedCache = usedCache,
+                startSilentRetryOnCache = usedCache
+            )
+        }.also { job ->
+            job.invokeOnCompletion { cause ->
+                runOnUiThread {
+                    if (seq == weatherRequestSeq && provider == WeatherProvider.KMA) {
+                        isRefreshing = false
+                        hideLoading()
+                        // aws2_min과 동시에 stn=0 전체 현천 요청이 몰리지 않도록 AWS 1차 완료 후 현천 조회를 시작합니다.
+                        if (cause == null) {
+                            fetchWw1Now(stn, seq)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun applyKmaAwsText(
+        stn: Int,
+        seq: Long,
+        tm2: String,
+        textToParse: String,
+        usedCache: Boolean,
+        startSilentRetryOnCache: Boolean
+    ) {
+        logD("aws2_min http ${if (usedCache) "cache" else "ok"}, len=${textToParse.length}, ageMin=${cacheAgeMinutes()}")
+
+        // PA는 16번째 칼럼(1-based)
+        val paStr = extractByColumnIndex(textToParse, 16) ?: extractByHeader(textToParse, "PA")
+        val pa = paStr?.toDoubleOrNull()
+
+        // TA는 9번째 칼럼(1-based)
+        val taStr = extractByColumnIndex(textToParse, 9) ?: extractByHeader(textToParse, "TA")
+        val parsedTempC = parseValidCelsius(taStr)
+        val tempDisplay = formatCelsiusForDisplay(parsedTempC)
+
+        // WD1(풍향)=3번째, WS1(풍속)=4번째, HM(습도)=15번째 칼럼(1-based)
+        val wdStr = extractByColumnIndex(textToParse, 3) ?: extractByHeader(textToParse, "WD1")
+        val wsStr = extractByColumnIndex(textToParse, 4) ?: extractByHeader(textToParse, "WS1")
+        val hmStr = extractByColumnIndex(textToParse, 15) ?: extractByHeader(textToParse, "HM")
+
+        val wdDisplay = formatMetricDisplay(wdStr)
+        val wsDisplay = formatMetricDisplay(wsStr)
+        val hmDisplay = formatMetricDisplay(hmStr)
+        val parsedWindDeg = parseValidWindDeg(wdStr)
+
+        // 강수 판정:
+        // 1) RE가 정상값(0 이상)이면 RE로 판정
+        // 2) RE가 -99.9 같은 음수 오류값이면 RN-15m(11번째 칼럼)로 대체 판정
+        val re = (extractByColumnIndex(textToParse, 10) ?: extractByHeader(textToParse, "RE"))
+            ?.toDoubleOrNull()
+        val rn15 = (extractByHeader(textToParse, "RN-15m") ?: extractByColumnIndex(textToParse, 11))?.toDoubleOrNull()
+        val rn60 = (extractByHeader(textToParse, "RN-60m") ?: extractByColumnIndex(textToParse, 12))?.toDoubleOrNull()
+        val rn12 = (extractByHeader(textToParse, "RN-12H") ?: extractByColumnIndex(textToParse, 13))?.toDoubleOrNull()
+        val rnDay = (extractByHeader(textToParse, "RN-DAY") ?: extractByColumnIndex(textToParse, 14))?.toDoubleOrNull()
+
+        val rainDecision: Boolean? = when {
+            re == null -> null
+            re >= 0.0 -> re > 0.0
+            rn15 != null && rn15 >= 0.0 -> rn15 > 0.0
+            else -> null
+        }
+
+        val rainSource = when {
+            re == null -> "unknown(RE missing)"
+            re >= 0.0 -> "RE"
+            rn15 != null && rn15 >= 0.0 -> "RN-15m fallback"
+            else -> "unknown(RN-15m invalid)"
+        }
+
+        // 오래된 캐시에서 '비 안옴'으로 단정하지 않도록 보호
+        val cacheOld = usedCache && cacheAgeMinutes() >= 60
+
+        logD("rain parsed stn=$stn tm2=$tm2 re=${re ?: "null"} rn15=${rn15 ?: "null"} rn60=${rn60 ?: "null"} rn12=${rn12 ?: "null"} rnDay=${rnDay ?: "null"} source=$rainSource -> rainDecision=$rainDecision usedCache=$usedCache")
+
+        withContext(Dispatchers.Main) {
+            if (seq != weatherRequestSeq || provider != WeatherProvider.KMA) return@withContext
+            currentWeatherTimeRaw = tm2
+            statusText.text = getString(R.string.kma_as_of_format, tm2)
+
+            currentTempCelsius = parsedTempC
+            tempValueText.text = tempDisplay
+
+            windDirValueText.text = wdDisplay
+            lastWindDirectionDeg = parsedWindDeg
+            updateWindDirectionCardinal(parsedWindDeg)
+            windSpeedValueText.text = wsDisplay
+            humidityValueText.text = hmDisplay
+
+            currentUsedCache = usedCache
+            currentCacheOld = cacheOld
+
+            if (pa != null && pa in 880.0..1100.0) {
+                val paOut = String.format(Locale.US, "%.2f", pa)
+                pressureText.text = getString(R.string.pressure_value, paOut)
+                updateEmojiAndLabel(pa)
+                currentStatusResult = if (usedCache) "CACHE" else "SUCCESS"
+                currentErrorDetail = ""
+                retryStatusText.setText(if (usedCache) R.string.status_cache else R.string.status_success)
+            } else {
+                currentPressureHpa = Double.NaN
+                currentErrorDetail = "NO_DATA"
+                pressureText.text = getString(R.string.api_error, getString(R.string.api_no_data))
+                currentStatusResult = if (usedCache) "CACHE" else "FAIL"
+                retryStatusText.setText(if (usedCache) R.string.status_cache else R.string.status_fail)
+            }
+
+            currentRainDecision = when {
+                rainDecision == null -> -1
+                cacheOld && !rainDecision -> -1
+                rainDecision -> 1
+                else -> 0
+            }
+            weatherText.text = when {
+                rainDecision == null -> getString(R.string.weather_unknown)
+                cacheOld && !rainDecision -> getString(R.string.weather_unknown)
+                rainDecision -> if (usedCache) getString(R.string.weather_rain_cache) else getString(R.string.weather_rain)
+                else -> if (usedCache) getString(R.string.weather_no_rain_cache) else getString(R.string.weather_no_rain)
+            }
+
+            isRefreshing = false
+            hideLoading()
+
+            if (startSilentRetryOnCache) {
+                startKmaAwsSilentRetry(stn, seq)
+            }
+        }
+    }
+
+    private fun startKmaAwsSilentRetry(stn: Int, seq: Long) {
+        awsRetryJob?.cancel()
+        awsRetryJob = lifecycleScope.launch(Dispatchers.IO) {
+            val offsets = intArrayOf(2, 5, 10)
+            for (attempt in 1..3) {
+                delay(1_200L)
+                if (seq != weatherRequestSeq || provider != WeatherProvider.KMA) return@launch
+                logD("aws2_min silent retry attempt=$attempt stn=$stn")
+                val networkResult = fetchKmaAwsWithOffsets(stn, offsets)
+                if (seq != weatherRequestSeq || provider != WeatherProvider.KMA) return@launch
+                if (networkResult != null) {
+                    saveCacheText(stn, networkResult.first)
+                    applyKmaAwsText(
+                        stn = stn,
+                        seq = seq,
+                        tm2 = networkResult.second,
+                        textToParse = networkResult.first,
+                        usedCache = false,
+                        startSilentRetryOnCache = false
+                    )
+                    logD("aws2_min silent retry ok attempt=$attempt stn=$stn tm2=${networkResult.second}")
+                    return@launch
+                }
+            }
+            logD("aws2_min silent retry exhausted stn=$stn")
+        }
+    }
+
+    private fun extractByHeader(text: String, field: String): String? {
+        val lines = text.lineSequence()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .toList()
+
+        for (i in lines.indices) {
+            val line = lines[i]
+            val isHeader = line.startsWith("#") && line.contains("YYMMDDHHMI")
+            if (!isHeader) continue
+
+            val headerCols = line.removePrefix("#").trim().split(Regex("""\s+"""))
+            val colIdx = headerCols.indexOf(field)
+            if (colIdx == -1) continue
+
+            var last: String? = null
+            for (j in i + 1 until lines.size) {
+                val dl = lines[j]
+                if (dl.startsWith("#")) break
+                val parts = dl.split(Regex("""\s+"""))
+                if (parts.size > colIdx) {
+                    last = parts[colIdx].trim()
+                }
+            }
+            if (last != null) return last
+        }
+        return null
+    }
+
+    /* ---------- 분류 ---------- */
+    private fun updateEmojiAndLabel(pressure: Double) {
+        currentPressureHpa = pressure
+        when {
+            pressure < PRESSURE_LOW -> {
+                emojiView.setImageResource(R.drawable.sick)
+                conditionText.setText(R.string.condition_pain)
+            }
+            pressure > PRESSURE_HIGH -> {
+                emojiView.setImageResource(R.drawable.happy)
+                conditionText.setText(R.string.condition_good)
+            }
+            else -> {
+                emojiView.setImageResource(R.drawable.normal)
+                conditionText.setText(R.string.condition_normal)
+            }
+        }
+    }
+
+
+    /* ---------- 현천(WW1) ---------- */
+    private fun fetchWw1Now(stn: Int, requestSeq: Long) {
+        val seq = ++ww1RequestSeq
+
+        ww1PrimaryJob?.cancel()
+        ww1RetryJob?.cancel()
+
+        wwNowText.text = getString(R.string.ww_loading)
+        wwNowText.visibility = View.VISIBLE
+
+        val primaryTm2 = kstTm2Minus(2)
+        logD("ww1 all request(primary) seq=$seq targetStn=$stn tm2=$primaryTm2 timeoutMs=7000")
+
+        ww1PrimaryJob = lifecycleScope.launch {
+            val res = withTimeoutOrNull(7_000L) {
+                withContext(Dispatchers.IO) {
+                    ww1Client.fetchNearest(
+                        targetStn = stn,
+                        tm2 = primaryTm2,
+                        allowCache = true
+                    )
+                }
+            }
+
+            if (seq != ww1RequestSeq || requestSeq != weatherRequestSeq || provider != WeatherProvider.KMA) return@launch
+
+            if (res == null) {
+                currentWwCode = Int.MIN_VALUE
+                currentWwProvider = "KMA"
+                wwNowText.text = getString(R.string.ww_unavailable)
+                logD("현천 실패 targetStn=$stn tm2=$primaryTm2 cache=none")
+                startWw1SilentRetry(seq = seq, stn = stn, requestSeq = requestSeq)
+                return@launch
+            }
+
+            currentWwCode = res.code
+            currentWwProvider = "KMA"
+            wwNowText.text = "${res.code}(${Aws2Ww1Client.labelFor(res.code, isEnglishLocale())})"
+            val distanceText = res.distanceKm?.let { String.format(Locale.US, "%.2f", it) } ?: "unknown"
+
+            if (res.networkOk) {
+                logD(
+                    "현천 ok targetStn=$stn sourceStn=${res.sourceStn} sourceName=${res.sourceName} " +
+                            "distKm=$distanceText dataTm=${res.dataTm} code=${res.code}(${res.label}) min=${res.nnMin}"
+                )
+            } else {
+                logD(
+                    "현천 실패 targetStn=$stn tm2=$primaryTm2 cache=used " +
+                            "sourceStn=${res.sourceStn} sourceName=${res.sourceName} distKm=$distanceText " +
+                            "dataTm=${res.dataTm} code=${res.code}(${res.label})"
+                )
+                startWw1SilentRetry(seq = seq, stn = stn, requestSeq = requestSeq)
+            }
+        }
+    }
+
+    private fun startWw1SilentRetry(seq: Long, stn: Int, requestSeq: Long) {
+        val maxAttempts = 3
+        val offsets = intArrayOf(2, 5, 10)
+
+        ww1RetryJob?.cancel()
+        ww1RetryJob = lifecycleScope.launch {
+            for (attempt in 1..maxAttempts) {
+                delay(700L)
+
+                for (off in offsets) {
+                    val tm2 = kstTm2Minus(off)
+                    logD("ww1 all retry attempt=$attempt seq=$seq targetStn=$stn tm2=$tm2")
+
+                    val res = withTimeoutOrNull(6_000L) {
+                        withContext(Dispatchers.IO) {
+                            ww1Client.fetchNearest(
+                                targetStn = stn,
+                                tm2 = tm2,
+                                allowCache = false
+                            )
+                        }
+                    }
+
+                    if (seq != ww1RequestSeq || requestSeq != weatherRequestSeq || provider != WeatherProvider.KMA) return@launch
+
+                    if (res != null && res.networkOk) {
+                        currentWwCode = res.code
+                        currentWwProvider = "KMA"
+                        wwNowText.text = "${res.code}(${Aws2Ww1Client.labelFor(res.code, isEnglishLocale())})"
+                        val distanceText = res.distanceKm?.let { String.format(Locale.US, "%.2f", it) } ?: "unknown"
+                        logD(
+                            "현천 ok retry=$attempt targetStn=$stn sourceStn=${res.sourceStn} " +
+                                    "sourceName=${res.sourceName} distKm=$distanceText dataTm=${res.dataTm} " +
+                                    "code=${res.code}(${res.label}) min=${res.nnMin}"
+                        )
+                        return@launch
+                    }
+
+                    logD("현천 실패 retry=$attempt targetStn=$stn tm2=$tm2")
+                }
+            }
+
+            logD("ww1 all retry exhausted seq=$seq targetStn=$stn")
+        }
+    }
+
+
+
+
+    /* ---------- 제공처 전환, 로딩, CSV 위치 복원 ---------- */
+    private fun updateProviderUi() {
+        val open = provider == WeatherProvider.OPEN_METEO
+        sourceToggleButton.setText(if (open) R.string.provider_to_kma else R.string.provider_to_open)
+        sourceFooterText.setText(if (open) R.string.provider_footer_open else R.string.provider_footer_kma)
+        wwLegendText.setText(if (open) R.string.open_wmo_legend else R.string.ww_legend)
+    }
+
+    private fun initializeIdleWeatherUi() {
+        currentWeatherMode = "IDLE"
+        currentStatusResult = "START"
+        statusText.text = getString(R.string.press_reconnect)
+        retryStatusText.text = getString(R.string.status_start)
+        regionText.text = if (hasActiveStationSelection()) {
+            val name = prefs.getString(PREF_MANUAL_NAME, null)
+                ?: findStationById(selectedStationId())?.name
+                ?: getString(R.string.region_saved_fallback)
+            getString(R.string.region_selected_label, name)
+        } else ""
+        resetWeatherValues()
+    }
+
+    private fun resetWeatherValues() {
+        pressureText.setText(R.string.pressure_default)
+        weatherText.setText(R.string.weather_unknown)
+        wwNowText.setText(R.string.ww_unavailable)
+        tempValueText.text = "-"
+        windDirValueText.text = "-"
+        windDirCardinalText.text = ""
+        windDirCardinalText.visibility = View.GONE
+        windSpeedValueText.text = "-"
+        humidityValueText.text = "-"
+        lastWindDirectionDeg = Float.NaN
+        currentPressureHpa = Double.NaN
+        currentTempCelsius = Double.NaN
+        currentRainDecision = -1
+        currentUsedCache = false
+        currentCacheOld = false
+        currentWwCode = Int.MIN_VALUE
+        currentWwProvider = ""
+        currentErrorDetail = ""
+        emojiView.setImageResource(R.drawable.normal)
+        conditionText.text = ""
+    }
+
+    private fun cancelActiveLocationRequest() {
+        ++locationRequestSeq
+        geocodeJob?.cancel()
+        geocodeJob = null
+        locationTimeoutRunnable?.let { timeHandler.removeCallbacks(it) }
+        locationTimeoutRunnable = null
+        fusedCancellationSource?.cancel()
+        fusedCancellationSource = null
+        systemLocationCancellation?.cancel()
+        systemLocationCancellation = null
+    }
+
+    private fun cancelCurrentWeatherRequest(keepLoadingDialog: Boolean = false) {
+        cancelActiveLocationRequest()
+        ++weatherRequestSeq
+        ++ww1RequestSeq
+        awsJob?.cancel()
+        awsRetryJob?.cancel()
+        openMeteoJob?.cancel()
+        ww1PrimaryJob?.cancel()
+        ww1RetryJob?.cancel()
+        isRefreshing = false
+        if (!keepLoadingDialog) hideLoading()
+    }
+
+    private fun cancelUserWeatherRequest() {
+        cancelCurrentWeatherRequest()
+        currentStatusResult = "START"
+        statusText.setText(R.string.press_reconnect)
+        retryStatusText.setText(R.string.status_start)
+    }
+
+    private fun switchWeatherProvider() {
+        cancelCurrentWeatherRequest()
+        provider = if (provider == WeatherProvider.KMA) WeatherProvider.OPEN_METEO else WeatherProvider.KMA
+        prefs.edit().putString(PREF_PROVIDER, if (provider == WeatherProvider.KMA) "kma" else "open_meteo").apply()
+        logD("switch provider -> $provider")
+        updateProviderUi()
+        resetWeatherValues()
+        startWeatherAtSavedLocation()
+    }
+
+    private fun startWeatherAtSavedLocation() {
+        if (hasActiveStationSelection()) {
+            val stn = findStationById(selectedStationId())
+            val lat = if (prefs.contains(PREF_MANUAL_LAT)) prefs.getFloat(PREF_MANUAL_LAT, 0f).toDouble() else stn?.lat
+            val lon = if (prefs.contains(PREF_MANUAL_LON)) prefs.getFloat(PREF_MANUAL_LON, 0f).toDouble() else stn?.lon
+            val name = prefs.getString(PREF_MANUAL_NAME, null) ?: stn?.name ?: getString(R.string.region_selected_prefix)
+            if (provider == WeatherProvider.OPEN_METEO && lat != null && lon != null) {
+                startOpenMeteoWeather(lat, lon, name)
+                return
+            }
+            if (provider == WeatherProvider.KMA && stn != null) {
+                val prefix = getString(
+                    if (hasPinnedStationSelection()) R.string.region_pinned_prefix else R.string.region_selected_prefix
+                )
+                startKmaWeather(stn.id, "$prefix $name", stn.name)
+                return
+            }
+        }
+        if (prefs.contains(PREF_LAST_LAT) && prefs.contains(PREF_LAST_LON)) {
+            val lat = prefs.getFloat(PREF_LAST_LAT, 0f).toDouble()
+            val lon = prefs.getFloat(PREF_LAST_LON, 0f).toDouble()
+            val region = prefs.getString(PREF_LAST_AREA, null)?.takeIf { it.isNotBlank() }
+                ?: LocalRegionRepository.nearest(csvRegions, lat, lon)?.name
+                ?: getString(R.string.region_near_previous)
+            if (provider == WeatherProvider.OPEN_METEO) {
+                startOpenMeteoWeather(lat, lon, if (isNearKorea(lat, lon)) region else getString(R.string.region_overseas))
+            } else if (isNearKorea(lat, lon)) {
+                val station = nearestStation(lat, lon).first
+                startKmaWeather(station.id, region, station.name)
+            } else {
+                currentWeatherMode = "OUTSIDE_KOREA"
+                currentStatusResult = "FAIL"
+                regionText.setText(R.string.location_select_manual_hint)
+                statusText.setText(R.string.location_outside_korea)
+                retryStatusText.setText(R.string.status_fail)
+            }
+        } else {
+            currentWeatherMode = "NO_LOCATION"
+            currentStatusResult = "START"
+            regionText.text = ""
+            statusText.setText(R.string.no_location_selected)
+            retryStatusText.setText(R.string.status_start)
+        }
+    }
+
+    private fun beginWeatherRequest(): Long {
+        val hadDialog = loadingDialog?.isShowing == true
+        cancelCurrentWeatherRequest(keepLoadingDialog = hadDialog)
+        ++weatherRequestSeq
+        val seq = weatherRequestSeq
+        showLoading(getString(R.string.loading_now))
+        retryStatusText.setText(R.string.status_in_progress)
+        statusText.setText(R.string.loading_now)
+        resetWeatherValues()
+        isRefreshing = true
+        return seq
+    }
+
+    private fun showLoading(message: String) {
+        if (isFinishing || isDestroyed) return
+        val previous = loadingDialog
+        if (previous?.isShowing == true) {
+            loadingLabel?.text = message
+            return
+        }
+        val pad = (24 * resources.displayMetrics.density).toInt()
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setPadding(pad, pad, pad, pad / 2)
+        }
+        val spinner = ProgressBar(this).apply {
+            indeterminateTintList = ContextCompat.getColorStateList(this@MainActivity, R.color.brand_green)
+        }
+        val spinnerSize = (36 * resources.displayMetrics.density).toInt()
+        content.addView(spinner, LinearLayout.LayoutParams(spinnerSize, spinnerSize))
+        val label = TextView(this).apply {
+            text = message
+            textSize = 16f
+            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.text_primary))
+            setPadding((16 * resources.displayMetrics.density).toInt(), 0, 0, 0)
+        }
+        loadingLabel = label
+        content.addView(label)
+        loadingDialog = AlertDialog.Builder(this)
+            .setView(content)
+            .setCancelable(true)
+            .setNegativeButton(R.string.cancel_action) { _, _ -> cancelUserWeatherRequest() }
+            .setOnCancelListener { cancelUserWeatherRequest() }
+            .create()
+            .also { it.show() }
+    }
+
+    private fun hideLoading() {
+        loadingDialog?.dismiss()
+        loadingDialog = null
+        loadingLabel = null
+    }
+
+    private fun startKmaWeather(stn: Int, areaLabel: String, stationName: String = "") {
+        val seq = beginWeatherRequest()
+        val resolvedStationName = stationName.ifBlank { findStationById(stn)?.name.orEmpty() }
+        val tm2 = kstTm2Minus(2)
+        currentWeatherMode = "KMA"
+        currentWeatherTimeRaw = tm2
+        currentAreaName = areaLabel
+        currentStationId = stn
+        currentStationName = resolvedStationName
+
+        regionText.text = if (resolvedStationName.isNotBlank()) {
+            "$areaLabel (stn=$stn $resolvedStationName)"
+        } else {
+            "$areaLabel (stn=$stn)"
+        }
+        statusText.text = getString(R.string.kma_as_of_format, tm2)
+        wwNowText.text = getString(R.string.ww_loading)
+        fetchKmaAws(stn, seq)
+    }
+
+    private fun startOpenMeteoWeather(lat: Double, lon: Double, areaLabel: String) {
+        val seq = beginWeatherRequest()
+        currentWeatherMode = "OPEN_METEO"
+        currentAreaName = areaLabel
+        currentStationId = 0
+        currentStationName = ""
+        regionText.text = areaLabel
+        openMeteoJob = lifecycleScope.launch {
+            try {
+                val result = openMeteoClient.fetch(lat, lon)
+                if (seq != weatherRequestSeq || provider != WeatherProvider.OPEN_METEO) return@launch
+                currentTempCelsius = result.temperature?.takeIf { it.isFinite() && it > -50.0 } ?: Double.NaN
+                tempValueText.text = formatCelsiusForDisplay(currentTempCelsius)
+                windDirValueText.text = formatMetricDisplay(result.windDirection?.toString())
+                lastWindDirectionDeg = parseValidWindDeg(result.windDirection?.toString())
+                updateWindDirectionCardinal(lastWindDirectionDeg)
+                windSpeedValueText.text = formatMetricDisplay(result.windSpeed?.toString())
+                humidityValueText.text = formatMetricDisplay(result.humidity?.toString())
+                val pressure = result.pressure?.takeIf { it in 880.0..1100.0 }
+                if (pressure != null) {
+                    val paOut = String.format(Locale.US, "%.2f", pressure)
+                    pressureText.text = getString(R.string.pressure_value, paOut)
+                    updateEmojiAndLabel(pressure)
+                    currentErrorDetail = ""
+                } else {
+                    currentPressureHpa = Double.NaN
+                    currentErrorDetail = "NO_PRESSURE"
+                    pressureText.text = getString(R.string.api_error, getString(R.string.api_no_pressure))
+                }
+
+                val code = result.weatherCode
+                if (code != null) {
+                    currentWwCode = code
+                    currentWwProvider = "OPEN_METEO"
+                    wwNowText.text = "$code(${OpenMeteoClient.description(code, isEnglishLocale())})"
+                } else {
+                    currentWwCode = Int.MIN_VALUE
+                    currentWwProvider = "OPEN_METEO"
+                    wwNowText.setText(R.string.ww_unavailable)
+                }
+
+                currentUsedCache = false
+                currentCacheOld = false
+                when {
+                    (result.snow ?: 0.0) > 0.0 || OpenMeteoClient.hasSnow(code) -> {
+                        currentRainDecision = 2
+                        weatherText.setText(R.string.open_snow)
+                    }
+                    (result.rain ?: 0.0) > 0.0 || OpenMeteoClient.hasRain(code) -> {
+                        currentRainDecision = 1
+                        weatherText.setText(R.string.weather_rain)
+                    }
+                    (result.precipitation ?: 0.0) > 0.0 -> {
+                        currentRainDecision = 3
+                        weatherText.setText(R.string.weather_precip)
+                    }
+                    result.precipitation != null || code != null -> {
+                        currentRainDecision = 0
+                        weatherText.setText(R.string.weather_no_rain)
+                    }
+                    else -> {
+                        currentRainDecision = -1
+                        weatherText.setText(R.string.weather_unknown)
+                    }
+                }
+                val asOf = result.validTime.replace('T', ' ')
+                currentWeatherTimeRaw = asOf
+                currentStatusResult = "SUCCESS"
+                statusText.text = getString(R.string.open_meteo_as_of_format, asOf)
+                retryStatusText.setText(R.string.status_success)
+                logD("open-meteo current model validTime=${result.validTime} code=$code")
+            } catch (cancel: CancellationException) {
+                throw cancel
+            } catch (e: Exception) {
+                if (seq == weatherRequestSeq && provider == WeatherProvider.OPEN_METEO) {
+                    logE("Open-Meteo request failed", e)
+                    currentWeatherTimeRaw = ""
+                    currentStatusResult = "FAIL"
+                    currentErrorDetail = "OPEN_METEO_FAILED"
+                    statusText.setText(R.string.open_meteo_failed)
+                    retryStatusText.setText(R.string.status_fail)
+                }
+            } finally {
+                if (seq == weatherRequestSeq && provider == WeatherProvider.OPEN_METEO) {
+                    isRefreshing = false
+                    hideLoading()
+                }
+            }
+        }
+    }
+
+    private fun configureRetryAttention() {
+        val scale = resources.displayMetrics.density
+        val shape = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = 10 * scale
+            setColor(ContextCompat.getColor(this@MainActivity, R.color.brand_green))
+        }
+        retryButton.backgroundTintList = null
+        retryButton.background = shape
+        attentionAnimator = ValueAnimator.ofInt(70, 235).apply {
+            duration = 900L
+            repeatCount = ValueAnimator.INFINITE
+            repeatMode = ValueAnimator.REVERSE
+            addUpdateListener {
+                val alpha = it.animatedValue as Int
+                shape.setStroke((2 * scale + 0.5f).toInt(), Color.argb(alpha, 220, 38, 38))
+            }
+            start()
+        }
+    }
+
+    /* ---------- 앱 로그 보기 ---------- */
+    private fun showLogDialog() {
+        val logText = AppLog.dump().ifBlank { getString(R.string.log_empty) }
+
+        val tv = TextView(this).apply {
+            text = logText
+            setTextIsSelectable(true)
+            textSize = 12f
+            setPadding(24, 16, 24, 16)
+        }
+        val sv = ScrollView(this).apply { addView(tv) }
+
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.diagnostics_log_title))
+            .setView(sv)
+            .setPositiveButton(getString(R.string.close), null)
+            .setNeutralButton(getString(R.string.copy)) { _, _ ->
+                val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                cm.setPrimaryClip(ClipData.newPlainText("wweather-log", logText))
+                Toast.makeText(this, getString(R.string.log_copied), Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton(getString(R.string.share)) { _, _ ->
+                val it = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, logText)
+                }
+                startActivity(Intent.createChooser(it, getString(R.string.share_log_title)))
+            }
+            .show()
+    }
+
+    /* ---------- 재접속 버튼 ---------- */
+    private fun tryReconnect() {
+        AppLog.clear()
+        if (hasActiveStationSelection()) {
+            startWeatherAtSavedLocation() // manual/pinned area: no GPS required
+        } else {
+            askForOneTimeLocation() // ask again per user action; negative does nothing
+        }
+    }
+
+    override fun onDestroy() {
+        cancelActiveLocationRequest()
+        super.onDestroy()
+        timeHandler.removeCallbacksAndMessages(null)
+        ww1PrimaryJob?.cancel()
+        ww1RetryJob?.cancel()
+        awsJob?.cancel()
+        awsRetryJob?.cancel()
+        openMeteoJob?.cancel()
+        attentionAnimator?.cancel()
+        hideLoading()
+    }
+
+}

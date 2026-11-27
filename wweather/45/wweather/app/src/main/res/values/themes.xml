@@ -1,0 +1,39 @@
+<resources>
+
+    <style name="Theme.Wweather" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/brand_blue</item>
+        <item name="colorPrimaryVariant">@color/brand_blue_dark</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/brand_green</item>
+        <item name="colorSecondaryVariant">@color/brand_green_dark</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="android:windowBackground">@color/bg_screen</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="alertDialogTheme">@style/ThemeOverlay.Wweather.AlertDialog</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Wweather.AlertDialog</item>
+    </style>
+
+    <style name="ThemeOverlay.Wweather.AlertDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="colorPrimary">@color/brand_green</item>
+        <item name="colorSecondary">@color/brand_green</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.Wweather.DialogButton.Positive</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.Wweather.DialogButton.Negative</item>
+        <item name="buttonBarNeutralButtonStyle">@style/Widget.Wweather.DialogButton.Neutral</item>
+    </style>
+
+    <style name="Widget.Wweather.DialogButton.Positive" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/brand_green</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="Widget.Wweather.DialogButton.Negative" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <style name="Widget.Wweather.DialogButton.Neutral" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/brand_blue</item>
+    </style>
+
+</resources>
