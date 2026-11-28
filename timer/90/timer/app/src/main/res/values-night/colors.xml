@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mint / Sage Material 3 Palette (Dark) -->
+    <color name="timer_bg">#101A14</color>
+    <color name="surface_card">#18261E</color>
+    <color name="surface_card_alt">#22342A</color>
+    <color name="surface_bottom_bar">#142019</color>
+
+    <color name="accent_primary">#6FD49A</color>
+    <color name="on_accent_primary">#0A2E1A</color>
+    <color name="accent_primary_pressed">#58BC83</color>
+    <color name="accent_primary_container">#1B4D32</color>
+    <color name="on_primary_container">#C2EBD0</color>
+
+    <color name="accent_secondary">#8DC2A8</color>
+    <color name="accent_secondary_container">#274135</color>
+    <color name="on_secondary_container">#D6EAE0</color>
+
+    <color name="accent_danger">#F28B82</color>
+    <color name="accent_danger_container">#4A1F1F</color>
+
+    <color name="text_primary">#E6F2EA</color>
+    <color name="text_secondary">#A9C0B0</color>
+    <color name="text_tertiary">#7D9685</color>
+    <color name="divider_subtle">#2B3E32</color>
+
+    <color name="tab_indicator_bg">#1F4A33</color>
+    <color name="tab_active_text">#B7F0CD</color>
+    <color name="tab_inactive_text">#8BA393</color>
+
+    <!-- Legacy aliases -->
+    <color name="purple_200">#6FD49A</color>
+    <color name="purple_500">#6FD49A</color>
+    <color name="purple_700">#1B4D32</color>
+    <color name="teal_200">#8DC2A8</color>
+    <color name="teal_700">#274135</color>
+    <color name="orange_500">#6FD49A</color>
+    <color name="gray_500">#8BA393</color>
+    <color name="black">#E6F2EA</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>

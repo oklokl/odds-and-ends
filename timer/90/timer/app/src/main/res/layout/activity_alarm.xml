@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/alarmRootScroll"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/appBgColor"
+    android:clipToPadding="false"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Timer.SurfaceCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingStart="24dp"
+                android:paddingTop="32dp"
+                android:paddingEnd="24dp"
+                android:paddingBottom="28dp">
+
+                <TextView
+                    android:id="@+id/alarmTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="@string/alarm_title"
+                    android:textColor="?attr/appTextPrimary"
+                    android:textSize="30sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/alarmLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="32dp"
+                    android:text="타이머 이름"
+                    android:textColor="?attr/appTextSecondary"
+                    android:textSize="18sp" />
+
+                <SeekBar
+                    android:id="@+id/sliderDismiss"
+                    android:layout_width="match_parent"
+                    android:layout_height="58dp"
+                    android:max="100"
+                    android:maxHeight="54dp"
+                    android:minHeight="54dp"
+                    android:paddingStart="27dp"
+                    android:paddingEnd="27dp"
+                    android:progressDrawable="@drawable/bg_dismiss_track"
+                    android:splitTrack="false"
+                    android:thumb="@drawable/bg_dismiss_thumb"
+                    android:thumbOffset="25dp" />
+
+                <TextView
+                    android:id="@+id/alarmHint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="@string/alarm_swipe"
+                    android:textColor="?attr/appTextSecondary"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+</ScrollView>

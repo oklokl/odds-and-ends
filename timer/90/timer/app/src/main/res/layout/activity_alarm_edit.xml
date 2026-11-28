@@ -1,0 +1,596 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/scrollRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/appBgColor"
+    android:clipToPadding="false"
+    android:fillViewport="true"
+    tools:context=".alarmclock.AlarmEditActivity"
+    tools:theme="@style/Theme.Timer">
+
+    <LinearLayout
+        android:id="@+id/root"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- 시간 설정 카드 -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Timer.SurfaceCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="22dp"
+            app:cardElevation="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/tvTimeTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingBottom="6dp"
+                    android:text="@string/alarm_time"
+                    android:textColor="?attr/appTextPrimary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TimePicker
+                    android:id="@+id/timePicker"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:timePickerMode="spinner" />
+
+                <TextView
+                    android:id="@+id/tvNowDateTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_alarm_block"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="8dp"
+                    android:text="@string/alarm_now_datetime_placeholder"
+                    android:textColor="?attr/appTextSecondary"
+                    android:textSize="12sp"
+                    tools:text="2026년 1월 5일 오후 1:13:45" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 요일 & 라벨 카드 -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Timer.SurfaceCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardCornerRadius="22dp"
+            app:cardElevation="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:id="@+id/rowDaysTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="10dp">
+
+                    <TextView
+                        android:id="@+id/tvDaysTitle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/alarm_days"
+                        android:textColor="?attr/appTextPrimary"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCalendar"
+                        style="@style/Timer.OutlinedPillButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:layout_marginEnd="8dp"
+                        android:autoSizeMaxTextSize="13sp"
+                        android:autoSizeMinTextSize="10sp"
+                        android:autoSizeStepGranularity="1sp"
+                        android:autoSizeTextType="uniform"
+                        android:maxLines="1"
+                        android:minWidth="48dp"
+                        android:paddingStart="10dp"
+                        android:paddingEnd="10dp"
+                        android:text="@string/alarm_calendar"
+                        android:textSize="13sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnEveryWeek"
+                        style="@style/Timer.TonalPillButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:autoSizeMaxTextSize="13sp"
+                        android:autoSizeMinTextSize="10sp"
+                        android:autoSizeStepGranularity="1sp"
+                        android:autoSizeTextType="uniform"
+                        android:maxLines="1"
+                        android:minWidth="48dp"
+                        android:paddingStart="10dp"
+                        android:paddingEnd="10dp"
+                        android:text="@string/alarm_every_week"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/dayGroup"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp"
+                    app:selectionRequired="false"
+                    app:singleSelection="false">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/daySun"
+                        style="@style/Timer.DayToggleButton"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:autoSizeMaxTextSize="14sp"
+                        android:autoSizeMinTextSize="10sp"
+                        android:autoSizeStepGranularity="1sp"
+                        android:autoSizeTextType="uniform"
+                        android:ellipsize="none"
+                        android:insetLeft="0dp"
+                        android:insetRight="0dp"
+                        android:maxLines="1"
+                        android:minWidth="0dp"
+                        android:paddingStart="0dp"
+                        android:paddingEnd="0dp"
+                        android:text="@string/day_sun" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/dayMon"
+                        style="@style/Timer.DayToggleButton"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:autoSizeMaxTextSize="14sp"
+                        android:autoSizeMinTextSize="10sp"
+                        android:autoSizeStepGranularity="1sp"
+                        android:autoSizeTextType="uniform"
+                        android:ellipsize="none"
+                        android:insetLeft="0dp"
+                        android:insetRight="0dp"
+                        android:maxLines="1"
+                        android:minWidth="0dp"
+                        android:paddingStart="0dp"
+                        android:paddingEnd="0dp"
+                        android:text="@string/day_mon" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/dayTue"
+                        style="@style/Timer.DayToggleButton"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:autoSizeMaxTextSize="14sp"
+                        android:autoSizeMinTextSize="10sp"
+                        android:autoSizeStepGranularity="1sp"
+                        android:autoSizeTextType="uniform"
+                        android:ellipsize="none"
+                        android:insetLeft="0dp"
+                        android:insetRight="0dp"
+                        android:maxLines="1"
+                        android:minWidth="0dp"
+                        android:paddingStart="0dp"
+                        android:paddingEnd="0dp"
+                        android:text="@string/day_tue" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/dayWed"
+                        style="@style/Timer.DayToggleButton"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:autoSizeMaxTextSize="14sp"
+                        android:autoSizeMinTextSize="10sp"
+                        android:autoSizeStepGranularity="1sp"
+                        android:autoSizeTextType="uniform"
+                        android:ellipsize="none"
+                        android:insetLeft="0dp"
+                        android:insetRight="0dp"
+                        android:maxLines="1"
+                        android:minWidth="0dp"
+                        android:paddingStart="0dp"
+                        android:paddingEnd="0dp"
+                        android:text="@string/day_wed" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/dayThu"
+                        style="@style/Timer.DayToggleButton"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:autoSizeMaxTextSize="14sp"
+                        android:autoSizeMinTextSize="10sp"
+                        android:autoSizeStepGranularity="1sp"
+                        android:autoSizeTextType="uniform"
+                        android:ellipsize="none"
+                        android:insetLeft="0dp"
+                        android:insetRight="0dp"
+                        android:maxLines="1"
+                        android:minWidth="0dp"
+                        android:paddingStart="0dp"
+                        android:paddingEnd="0dp"
+                        android:text="@string/day_thu" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/dayFri"
+                        style="@style/Timer.DayToggleButton"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:autoSizeMaxTextSize="14sp"
+                        android:autoSizeMinTextSize="10sp"
+                        android:autoSizeStepGranularity="1sp"
+                        android:autoSizeTextType="uniform"
+                        android:ellipsize="none"
+                        android:insetLeft="0dp"
+                        android:insetRight="0dp"
+                        android:maxLines="1"
+                        android:minWidth="0dp"
+                        android:paddingStart="0dp"
+                        android:paddingEnd="0dp"
+                        android:text="@string/day_fri" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/daySat"
+                        style="@style/Timer.DayToggleButton"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:autoSizeMaxTextSize="14sp"
+                        android:autoSizeMinTextSize="10sp"
+                        android:autoSizeStepGranularity="1sp"
+                        android:autoSizeTextType="uniform"
+                        android:ellipsize="none"
+                        android:insetLeft="0dp"
+                        android:insetRight="0dp"
+                        android:maxLines="1"
+                        android:minWidth="0dp"
+                        android:paddingStart="0dp"
+                        android:paddingEnd="0dp"
+                        android:text="@string/day_sat" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                <TextView
+                    android:id="@+id/tvLabelTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="16dp"
+                    android:paddingBottom="6dp"
+                    android:text="@string/alarm_name"
+                    android:textColor="?attr/appTextPrimary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/etLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:autofillHints="name"
+                    android:hint="@string/alarm_name_hint"
+                    android:importantForAutofill="yes"
+                    android:inputType="text"
+                    android:maxWidth="480dp"
+                    android:minHeight="48dp"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="10dp"
+                    android:textColor="?attr/appTextPrimary"
+                    android:textColorHint="?attr/appTextTertiary" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 소리 / 진동 / 스누즈 / 활성화 카드 -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Timer.SurfaceCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardCornerRadius="22dp"
+            app:cardElevation="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:id="@+id/rowSound"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:minHeight="48dp"
+                    android:orientation="horizontal"
+                    android:paddingBottom="4dp">
+
+                    <TextView
+                        android:id="@+id/tvSound"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:labelFor="@id/swSound"
+                        android:text="@string/alarm_sound"
+                        android:textColor="?attr/appTextPrimary"
+                        android:textSize="15sp" />
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/swSound"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minWidth="48dp"
+                        android:minHeight="48dp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/rowVibrate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:minHeight="48dp"
+                    android:orientation="horizontal"
+                    android:paddingBottom="4dp">
+
+                    <TextView
+                        android:id="@+id/tvVibrate"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:labelFor="@id/swVibrate"
+                        android:text="@string/alarm_vibrate"
+                        android:textColor="?attr/appTextPrimary"
+                        android:textSize="15sp" />
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/swVibrate"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minWidth="48dp"
+                        android:minHeight="48dp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvSnoozeTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/alarm_snooze"
+                    android:textColor="?attr/appTextPrimary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scrollbars="none">
+
+                    <RadioGroup
+                        android:id="@+id/rgSnoozeMinutes"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <RadioButton
+                            android:id="@+id/snooze5"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/snooze_5m" />
+
+                        <RadioButton
+                            android:id="@+id/snooze10"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:text="@string/snooze_10m" />
+
+                        <RadioButton
+                            android:id="@+id/snooze15"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:text="@string/snooze_15m" />
+
+                        <RadioButton
+                            android:id="@+id/snooze20"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:text="@string/snooze_20m" />
+
+                        <RadioButton
+                            android:id="@+id/snooze30"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:text="@string/snooze_30m" />
+
+                        <RadioButton
+                            android:id="@+id/snoozeCustom"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:text="@string/snooze_custom" />
+                    </RadioGroup>
+                </HorizontalScrollView>
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:scrollbars="none">
+
+                    <RadioGroup
+                        android:id="@+id/rgSnoozeCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <RadioButton
+                            android:id="@+id/snoozeCount3"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/snooze_3x" />
+
+                        <RadioButton
+                            android:id="@+id/snoozeCount5"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:text="@string/snooze_5x" />
+
+                        <RadioButton
+                            android:id="@+id/snoozeCountForever"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:text="@string/snooze_forever" />
+                    </RadioGroup>
+                </HorizontalScrollView>
+
+                <LinearLayout
+                    android:id="@+id/rowEnabled"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:minHeight="48dp"
+                    android:orientation="horizontal"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="4dp">
+
+                    <TextView
+                        android:id="@+id/tvEnabled"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/alarm_enabled"
+                        android:textColor="?attr/appTextPrimary"
+                        android:textSize="15sp" />
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/swEnabled"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minWidth="48dp"
+                        android:minHeight="48dp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/rowChangeSound"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:minHeight="48dp"
+                    android:orientation="horizontal"
+                    android:paddingTop="4dp">
+
+                    <TextView
+                        android:id="@+id/tvChangeSound"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/alarm_change_sound"
+                        android:textColor="?attr/appTextPrimary"
+                        android:textSize="15sp" />
+
+                    <ImageButton
+                        android:id="@+id/btnPickSound"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/alarm_change_sound"
+                        android:src="@drawable/ic_folder"
+                        android:stateListAnimator="@animator/btn_press_animator"
+                        app:tint="?attr/colorPrimary" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvSelectedSound"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="@string/alarm_sound_current_default"
+                    android:textColor="?attr/appTextSecondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <LinearLayout
+            android:id="@+id/bottomButtons"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:gravity="end"
+            android:orientation="horizontal"
+            android:paddingTop="6dp"
+            android:paddingBottom="8dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCancel"
+                style="@style/Timer.OutlinedPillButton"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_marginEnd="10dp"
+                android:layout_weight="1"
+                android:autoSizeMaxTextSize="15sp"
+                android:autoSizeMinTextSize="11sp"
+                android:autoSizeStepGranularity="1sp"
+                android:autoSizeTextType="uniform"
+                android:maxLines="1"
+                android:minWidth="0dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:text="@string/alarm_cancel" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSave"
+                style="@style/Timer.PrimaryPillButton"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_weight="1.3"
+                android:autoSizeMaxTextSize="15sp"
+                android:autoSizeMinTextSize="11sp"
+                android:autoSizeStepGranularity="1sp"
+                android:autoSizeTextType="uniform"
+                android:maxLines="1"
+                android:minWidth="0dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:text="@string/alarm_save" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>
