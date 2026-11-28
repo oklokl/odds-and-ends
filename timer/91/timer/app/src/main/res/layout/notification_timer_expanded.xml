@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  타이머 알림 (펼친 상태)
+  - 상단 헤더("내일 타이머")와 하단 액션 버튼("일시정지 | 중지")은
+    NotificationCompat.DecoratedCustomViewStyle + addAction()이 네이티브로 렌더링한다.
+  - 본문은 굵고 큰 카운트다운 숫자와 작은 보조 정보(종료 시각/기간)로 구성한다.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center_vertical"
+    android:paddingStart="4dp"
+    android:paddingEnd="4dp"
+    android:paddingTop="2dp"
+    android:paddingBottom="4dp">
+
+    <Chronometer
+        android:id="@+id/chronometer_big"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+        android:format="%s"
+        android:textStyle="bold"
+        android:textSize="32sp"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="22sp"
+        android:autoSizeMaxTextSize="34sp"
+        android:autoSizeStepGranularity="1sp"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/paused_time_big"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="@android:style/TextAppearance.Material.Notification.Title"
+        android:textStyle="bold"
+        android:textSize="32sp"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="22sp"
+        android:autoSizeMaxTextSize="34sp"
+        android:autoSizeStepGranularity="1sp"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/subtitle_big"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text=""
+        android:textSize="13sp"
+        android:alpha="0.75"
+        android:includeFontPadding="false"
+        android:maxLines="2"
+        android:ellipsize="end" />
+
+</LinearLayout>

@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Tomorrow Timer</string>
+
+    <!-- Bottom Navigation -->
+    <string name="tab_alarm">Alarm</string>
+    <string name="tab_stopwatch">Stopwatch</string>
+    <string name="tab_timer">Timer</string>
+    <string name="tab_settings">Settings</string>
+
+    <string name="label_tomorrow">Tomorrow</string>
+    <string name="label_tomorrow_checked">Tomorrow ✔</string>
+    <string name="label_am">AM</string>
+    <string name="label_pm">PM</string>
+    <string name="label_hour">Hour</string>
+    <string name="label_minute">Min</string>
+    <string name="label_second">Sec</string>
+    <string name="label_thousandth">ms</string>
+
+    <string name="zero_hhmmss_mmmm">00:00:00.000</string>
+    <string name="next_time_prefix">Alarm at %1$s</string>
+    <string name="now_time_format">Now %1$02d:%2$02d:%3$02d.%4$03d %5$s</string>
+
+    <string name="btn_next">Next</string>
+    <string name="btn_start">Start</string>
+    <string name="btn_pause">Pause</string>
+    <string name="btn_resume">Resume</string>
+    <string name="btn_reset">Reset</string>
+    <string name="btn_stop">Stop</string>
+    <string name="btn_add">Add</string>
+    <string name="btn_mode_vibrate">Vibrate</string>
+    <string name="btn_mode_sound">Sound</string>
+    <string name="btn_pick_sound">Pick Sound</string>
+    <string name="btn_duration">Duration</string>
+    <string name="btn_log">Log</string>
+
+    <string name="preset_5min">5m</string>
+    <string name="preset_10min">10m</string>
+    <string name="preset_15min">15m</string>
+    <string name="preset_20min">20m</string>
+    <string name="preset_30min">30m</string>
+    <string name="preset_40min">40m</string>
+    <string name="preset_50min">50m</string>
+
+    <string name="label_timer">Timer</string>
+    <string name="desc_toggle">Pause or resume timer</string>
+    <string name="desc_stop">Stop timer</string>
+
+    <string name="timer_add_title">Timer Name</string>
+    <string name="timer_name_hint">e.g. Lunch Alarm</string>
+    <string name="timer_default_name">Timer %1$d</string>
+    <string name="timer_default">Timer</string>
+    <string name="main_timer_default">Main Timer</string>
+    <string name="extra_timer_section_title">Extra Timers</string>
+    <string name="extra_summary_count_all">%1$d total</string>
+    <string name="extra_summary_count_running">%1$d total (%2$d running)</string>
+    <string name="btn_add_custom_preset">Add Preset</string>
+    <string name="create_preset_title">Create Time Preset</string>
+    <string name="create_preset_name_hint">Button label (optional)</string>
+    <string name="desc_lock_toggle">Keep configured time after finish</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
+    <string name="close">Close</string>
+
+    <string name="toast_timer_sound_set">Timer sound set</string>
+    <string name="toast_timer_sound_restored">Timer sound restored to default</string>
+    <string name="duration_dialog_title">Ring Duration</string>
+    <string name="duration_dialog_message">Select 5 to 60 minutes, or Continuous.</string>
+    <string name="duration_minutes_fmt">%1$dm</string>
+    <string name="duration_forever">Continuous</string>
+    <string name="toast_duration_forever">Ring duration: Continuous</string>
+    <string name="toast_duration_minutes">Ring duration: %1$d min</string>
+    <string name="toast_duration_restored">Ring duration restored to default (5 min)</string>
+    <string name="toast_logs_cleared">Logs cleared.</string>
+    <string name="rename_main_title">Rename Main Timer</string>
+    <string name="rename_main_hint">e.g. Study (leave blank for default)</string>
+    <string name="rename_label_title">Rename Label</string>
+    <string name="status_paused">Paused</string>
+    <string name="status_running">Running</string>
+    <string name="date_today_fmt">Today %1$s</string>
+    <string name="date_tomorrow_fmt">Tomorrow %1$s %2$s</string>
+    <string name="unit_hour_short">h</string>
+    <string name="unit_min_short">m</string>
+    <string name="unit_sec_short">s</string>
+    <string name="preset_fmt_hm">%1$dh %2$dm</string>
+    <string name="preset_fmt_h">%1$dh</string>
+    <string name="preset_fmt_m">%1$dm</string>
+    <string name="toast_min_one_second">Please enter at least 1 second</string>
+
+    <!-- Stopwatch -->
+    <string name="btn_lap">Lap</string>
+    <string name="btn_switch">Switch</string>
+    <string name="btn_keep_screen">Keep On</string>
+    <string name="btn_keep_screen_off">Release</string>
+    <string name="btn_keep_screen_long">Keep Screen On</string>
+    <string name="btn_keep_screen_long_off">Allow Sleep</string>
+    <string name="btn_clock">Clock</string>
+    <string name="stopwatch_2_title">Stopwatch 2</string>
+
+    <string name="alarm_title">Time\'s Up!</string>
+    <string name="alarm_swipe">→ Slide to dismiss</string>
+
+    <string name="digit_0">0</string>
+    <string name="digit_1">1</string>
+    <string name="digit_2">2</string>
+    <string name="digit_3">3</string>
+    <string name="digit_4">4</string>
+    <string name="digit_5">5</string>
+    <string name="digit_6">6</string>
+    <string name="digit_7">7</string>
+    <string name="digit_8">8</string>
+    <string name="digit_9">9</string>
+    <string name="arrow_back">←</string>
+    <string name="now_on_pad_text">Now 00:00:00.000 AM</string>
+
+    <string name="alarm_cancel">Cancel</string>
+    <string name="alarm_save">Save</string>
+    <string name="alarm_days">Days</string>
+    <string name="alarm_every_week">Weekly</string>
+    <string name="alarm_calendar">Calendar</string>
+    <string name="alarm_name">Alarm Name</string>
+    <string name="alarm_name_hint">e.g. Wake up</string>
+    <string name="alarm_sound">Alarm Sound</string>
+    <string name="alarm_vibrate">Vibration</string>
+    <string name="alarm_snooze">Snooze</string>
+    <string name="alarm_enabled">Enable Alarm</string>
+    <string name="alarm_change_sound">Change Sound</string>
+    <string name="alarm_sound_current_default">Default: alarm_sound.mp3</string>
+    <string name="alarm_sound_current_custom">Custom: %1$s</string>
+    <string name="alarm_sound_pick_failed">Selected file is unavailable; reverted to default sound.</string>
+    <string name="toast_alarm_sound_set">Alarm sound set</string>
+    <string name="toast_alarm_sound_restored">Restored to default sound</string>
+    <string name="day_sun">Sun</string>
+    <string name="day_mon">Mon</string>
+    <string name="day_tue">Tue</string>
+    <string name="day_wed">Wed</string>
+    <string name="day_thu">Thu</string>
+    <string name="day_fri">Fri</string>
+    <string name="day_sat">Sat</string>
+    <string name="snooze_5m">5m</string>
+    <string name="snooze_10m">10m</string>
+    <string name="snooze_15m">15m</string>
+    <string name="snooze_20m">20m</string>
+    <string name="snooze_30m">30m</string>
+    <string name="snooze_custom">Custom</string>
+    <string name="snooze_custom_fmt">Custom (%1$dm)</string>
+    <string name="snooze_custom_title">Custom Duration</string>
+    <string name="snooze_custom_message">Select between 1 and 60 minutes.</string>
+
+    <string name="snooze_3x">3 times</string>
+    <string name="snooze_5x">5 times</string>
+    <string name="snooze_forever">Forever</string>
+
+    <string name="alarm_time">Time</string>
+    <string name="alarm_now_datetime">Now: %1$s</string>
+    <string name="alarm_now_datetime_placeholder">Current date, day and time</string>
+    <string name="alarm_now_datetime_pattern">EEE, MMM d, yyyy h:mm:ss a</string>
+
+    <!-- Alarm list / group / snooze screen -->
+    <string name="alarm_empty">All alarms are off</string>
+    <string name="alarm_add">Add Alarm</string>
+    <string name="alarm_am">AM</string>
+    <string name="alarm_pm">PM</string>
+    <string name="alarm_no_days">No days</string>
+    <string name="alarm_selected_count">%1$d selected</string>
+    <string name="alarm_delete_confirm">Delete selected alarms?</string>
+    <string name="alarm_delete">Delete</string>
+    <string name="alarm_select_all">Select all</string>
+    <string name="alarm_select_none">Deselect all</string>
+
+    <string name="alarm_group_other">Other</string>
+    <string name="alarm_group_other_ungroup">Other (Ungroup)</string>
+    <string name="alarm_group_create_new">Create new group…</string>
+    <string name="alarm_group_move_title">Move to Group</string>
+    <string name="alarm_group_manage_title">Manage Groups</string>
+    <string name="alarm_group_new_title">New Group</string>
+    <string name="alarm_group_name_hint">Group name</string>
+    <string name="alarm_group_create_btn">Create</string>
+    <string name="alarm_group_rename">Rename</string>
+    <string name="alarm_group_delete_title">Delete Group</string>
+    <string name="alarm_group_delete_msg">Delete group \'%1$s\'?\nAlarms will be moved to \'Other\'.</string>
+
+    <string name="alarm_weekday_default">Weekday Alarm</string>
+    <string name="alarm_again_current_time">Current Time</string>
+    <string name="alarm_again_title">Alarm!</string>
+    <string name="alarm_again_count_fmt">#%1$d</string>
+    <string name="alarm_again_total_forever_fmt">%1$d (Forever)</string>
+    <string name="alarm_again_total_fmt">%1$d times</string>
+    <string name="alarm_again_info_fmt">This is a repeating weekday alarm.\nSlide to dismiss and it will ring again in 1 minute (max %1$d min each).\nDismiss %2$s total to turn off completely.</string>
+    <string name="alarm_again_full_dismiss">Dismiss All</string>
+    <string name="alarm_again_minute_suffix" />
+
+    <!-- Mini Calendar -->
+    <string name="calendar_today">Today</string>
+    <string name="calendar_close">Close</string>
+    <string name="calendar_month_title_fmt">%2$d / %1$d</string>
+
+    <string name="alarm_groups">Groups</string>
+    <string name="alarm_move_group">Group</string>
+
+    <!-- Notifications & Channels -->
+    <string name="channel_timer_progress">Timer Progress</string>
+    <string name="channel_stopwatch_progress">Stopwatch Progress</string>
+    <string name="channel_stopwatch_desc">Notification shown while stopwatch is running</string>
+    <string name="channel_extra_progress">Extra Timer Progress</string>
+    <string name="channel_clock_display">Clock Display</string>
+    <string name="channel_clock_desc">Clock notification displaying current time</string>
+    <string name="channel_timer_alarm">Timer Alarm</string>
+    <string name="channel_timer_alarm_desc">Timer alarm notifications</string>
+    <string name="channel_alarm_history">Alarm History</string>
+    <string name="channel_alarm_history_desc">Alarm ring history</string>
+    <string name="channel_weekday_alarm_desc">Weekday (repeating) alarm</string>
+
+    <string name="notif_timer_finished_title">⏰ Timer Finished</string>
+    <string name="notif_weekday_alarm_title">⏰ Weekday Alarm</string>
+    <string name="notif_dismiss_alarm">Dismiss</string>
+    <string name="notif_timer_history_title">Timer Finished Time</string>
+    <string name="notif_alarm_history_title">Alarm Finished Time</string>
+    <string name="notif_timer_history_text">%1$s • \"%2$s\" timer finished</string>
+    <string name="notif_alarm_history_text">%1$s • \"%2$s\" alarm finished</string>
+    <string name="notif_extra_running_count">Running: %1$d</string>
+    <string name="notif_paused_with_total">Paused (%1$s)</string>
+    <string name="notif_end_with_total">%1$s / Ends %2$s</string>
+    <string name="notif_end_only">Ends %1$s</string>
+    <string name="notif_date_format_day">MMM d</string>
+    <string name="notif_date_format_time">h:mm a</string>
+
+    <!-- Settings & Themes -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_subtitle">Tap any color box to change the entire app theme immediately.</string>
+    <string name="settings_theme_section">App Color Themes (8)</string>
+    <string name="settings_sound_guide_title">Alarm Sound &amp; File Compatibility</string>
+    <string name="settings_sound_guide_body">Both Timer and Weekday Alarms support MP3, WAV, and M4A audio files. If a selected file is deleted or moved, it automatically reverts to the default sound (alarm_sound.mp3).</string>
+    <string name="settings_language_section">Language (EN / KR)</string>
+    <string name="settings_language_desc">Tap a button to switch the entire app language immediately.</string>
+    <string name="lang_korean">KR 한국어</string>
+    <string name="lang_english">EN English</string>
+    <string name="theme_applying_badge">Active</string>
+
+    <string name="theme_original_title">Original</string>
+    <string name="theme_original_subtitle">Mint Sage · Auto Dark</string>
+    <string name="theme_amoled_title">Pure Black</string>
+    <string name="theme_amoled_subtitle">Battery Saver · White Border</string>
+    <string name="theme_blue_title">Sky Blue</string>
+    <string name="theme_blue_subtitle">Clear Pastel Blue</string>
+    <string name="theme_pink_title">Blossom Pink</string>
+    <string name="theme_pink_subtitle">Soft Pastel Pink</string>
+    <string name="theme_crimson_title">Crimson Rose</string>
+    <string name="theme_crimson_subtitle">Deep Red · Rose Accent</string>
+    <string name="theme_lavender_title">Lavender</string>
+    <string name="theme_lavender_subtitle">AI Pick · Soft Violet</string>
+    <string name="theme_sand_title">Sand Amber</string>
+    <string name="theme_sand_subtitle">AI Pick · Warm Cream</string>
+    <string name="theme_navy_title">Deep Navy</string>
+    <string name="theme_navy_subtitle">AI Pick · Easy Night</string>
+
+    <!-- Logs -->
+    <string name="log_dialog_title">Alarm &amp; Timer Logs</string>
+    <string name="log_share">Share</string>
+    <string name="log_save">Save</string>
+    <string name="log_copy">Copy</string>
+    <string name="log_saved_fmt">Saved %1$s</string>
+    <string name="log_save_failed">Failed to save log</string>
+    <string name="log_copied">Logs copied to clipboard</string>
+    <string name="log_share_chooser">Share Logs</string>
+    <string name="log_empty">No saved logs.</string>
+    <string name="log_prev_header">[Previous Log]</string>
+    <string name="log_curr_header">[Current Log]</string>
+    <string name="log_read_failed">Failed to read log: %1$s</string>
+</resources>

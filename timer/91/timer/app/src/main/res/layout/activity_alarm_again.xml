@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/alarmAgainScroll"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/appBgColor"
+    android:clipToPadding="false"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:id="@+id/alarmAgainRoot"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:id="@+id/currentTimeLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="start"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:text="@string/alarm_again_current_time"
+            android:textColor="?attr/appTextSecondary"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/currentTimeBox"
+            android:layout_width="match_parent"
+            android:layout_height="96dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_alarm_block"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp">
+
+            <TextView
+                android:id="@+id/currentTimeAmPm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:includeFontPadding="false"
+                android:text="@string/alarm_am"
+                android:textColor="?attr/appTextSecondary"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/currentTimeClock"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:layout_marginEnd="10dp"
+                android:autoSizeMaxTextSize="46sp"
+                android:autoSizeMinTextSize="24sp"
+                android:autoSizeStepGranularity="1sp"
+                android:autoSizeTextType="uniform"
+                android:ellipsize="end"
+                android:fontFeatureSettings="tnum"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="10:00"
+                android:textColor="?attr/appTextPrimary"
+                android:textSize="46sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="@id/currentTimeAmPm"
+                app:layout_constraintEnd_toStartOf="@id/currentTimeUnit"
+                app:layout_constraintStart_toEndOf="@id/currentTimeAmPm"
+                app:layout_constraintTop_toTopOf="@id/currentTimeAmPm" />
+
+            <TextView
+                android:id="@+id/currentTimeUnit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:includeFontPadding="false"
+                android:text="@string/alarm_again_minute_suffix"
+                android:textColor="?attr/appTextSecondary"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="@id/currentTimeAmPm"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/currentTimeAmPm" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <TextView
+            android:id="@+id/alarmInfoText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:autoSizeMaxTextSize="17sp"
+            android:autoSizeMinTextSize="12sp"
+            android:autoSizeStepGranularity="1sp"
+            android:autoSizeTextType="uniform"
+            android:background="@drawable/bg_alarm_block"
+            android:gravity="start|center_vertical"
+            android:paddingStart="20dp"
+            android:paddingTop="14dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="14dp"
+            android:text="이 알람은 요일 알람 입니다\n밀어서 해제하면 다시 1분 후에 알림이 울립니다\n총 3~5회 해제하면 완전 종료됩니다"
+            android:textColor="?attr/appTextSecondary" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/alarmAgainTitle"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_weight="1"
+                android:autoSizeMaxTextSize="36sp"
+                android:autoSizeMinTextSize="18sp"
+                android:autoSizeStepGranularity="1sp"
+                android:autoSizeTextType="uniform"
+                android:background="@drawable/bg_alarm_block"
+                android:gravity="start|center_vertical"
+                android:paddingStart="20dp"
+                android:paddingEnd="16dp"
+                android:text="@string/alarm_again_title"
+                android:textColor="?attr/appTextPrimary"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/alarmAgainCount"
+                android:layout_width="104dp"
+                android:layout_height="76dp"
+                android:layout_marginStart="12dp"
+                android:autoSizeMaxTextSize="32sp"
+                android:autoSizeMinTextSize="16sp"
+                android:autoSizeStepGranularity="1sp"
+                android:autoSizeTextType="uniform"
+                android:background="@drawable/bg_alarm_block"
+                android:gravity="center"
+                android:maxLines="1"
+                android:padding="12dp"
+                android:text="1"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/alarmAgainLabel"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="12dp"
+            android:autoSizeMaxTextSize="26sp"
+            android:autoSizeMinTextSize="14sp"
+            android:autoSizeStepGranularity="1sp"
+            android:autoSizeTextType="uniform"
+            android:background="@drawable/bg_alarm_block"
+            android:gravity="start|center_vertical"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:text="@string/alarm_name"
+            android:textColor="?attr/appTextPrimary" />
+
+        <SeekBar
+            android:id="@+id/sliderDismissAgain"
+            android:layout_width="match_parent"
+            android:layout_height="58dp"
+            android:layout_marginTop="20dp"
+            android:max="100"
+            android:maxHeight="54dp"
+            android:minHeight="54dp"
+            android:paddingStart="27dp"
+            android:paddingEnd="27dp"
+            android:progressDrawable="@drawable/bg_dismiss_track"
+            android:splitTrack="false"
+            android:thumb="@drawable/bg_dismiss_thumb"
+            android:thumbOffset="25dp" />
+
+        <TextView
+            android:id="@+id/alarmAgainHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:autoSizeMaxTextSize="18sp"
+            android:autoSizeMinTextSize="12sp"
+            android:autoSizeStepGranularity="1sp"
+            android:autoSizeTextType="uniform"
+            android:gravity="center"
+            android:text="@string/alarm_swipe"
+            android:textColor="?attr/appTextSecondary"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnFullDismiss"
+            style="@style/Timer.PrimaryPillButton"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginTop="20dp"
+            android:autoSizeMaxTextSize="22sp"
+            android:autoSizeMinTextSize="14sp"
+            android:autoSizeStepGranularity="1sp"
+            android:autoSizeTextType="uniform"
+            android:text="@string/alarm_again_full_dismiss"
+            app:cornerRadius="22dp" />
+
+    </LinearLayout>
+</ScrollView>

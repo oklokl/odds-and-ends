@@ -1,0 +1,262 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+
+    <string name="app_name">내일 타이머</string>
+
+    <!-- 하단 내비게이션 -->
+    <string name="tab_alarm">알림</string>
+    <string name="tab_stopwatch">스톱워치</string>
+    <string name="tab_timer">타이머</string>
+    <string name="tab_settings">설정</string>
+
+    <string name="label_tomorrow">내일</string>
+    <string name="label_tomorrow_checked">내일 ✔</string>
+    <string name="label_am">오전</string>
+    <string name="label_pm">오후</string>
+    <string name="label_hour">시간</string>
+    <string name="label_minute">분</string>
+    <string name="label_second">초</string>
+    <string name="label_thousandth">천분</string>
+
+    <string name="zero_hhmmss_mmmm">00:00:00.000</string>
+    <string name="next_time_prefix">알림 울릴 시간 %1$s</string>
+    <string name="now_time_format">현재 시간 %1$02d:%2$02d:%3$02d.%4$03d %5$s</string>
+
+    <string name="btn_next">다음</string>
+    <string name="btn_start">시작</string>
+    <string name="btn_pause">일시정지</string>
+    <string name="btn_resume">다시시작</string>
+    <string name="btn_reset">초기화</string>
+    <string name="btn_stop">중지</string>
+    <string name="btn_add">추가</string>
+    <string name="btn_mode_vibrate">진동</string>
+    <string name="btn_mode_sound">소리</string>
+    <string name="btn_pick_sound">소리 선택</string>
+    <string name="btn_duration">지속</string>
+    <string name="btn_log">로그</string>
+
+    <string name="preset_5min">5분</string>
+    <string name="preset_10min">10분</string>
+    <string name="preset_15min">15분</string>
+    <string name="preset_20min">20분</string>
+    <string name="preset_30min">30분</string>
+    <string name="preset_40min">40분</string>
+    <string name="preset_50min">50분</string>
+
+    <string name="label_timer">타이머</string>
+    <string name="desc_toggle">타이머 일시정지/다시시작</string>
+    <string name="desc_stop">타이머 중지</string>
+
+    <string name="timer_add_title">타이머 이름</string>
+    <string name="timer_name_hint">예: 점심 알람</string>
+    <string name="timer_default_name">%1$d 번 타이머</string>
+    <string name="timer_default">타이머</string>
+    <string name="main_timer_default">메인 타이머</string>
+    <string name="extra_timer_section_title">보조 타이머</string>
+    <string name="extra_summary_count_all">총 %1$d개</string>
+    <string name="extra_summary_count_running">총 %1$d개 (%2$d개 실행 중)</string>
+    <string name="btn_add_custom_preset">시간 버튼 추가</string>
+    <string name="create_preset_title">시간 버튼 만들기</string>
+    <string name="create_preset_name_hint">버튼 이름 입력 (선택)</string>
+    <string name="desc_lock_toggle">완료 후 설정 시간 유지</string>
+    <string name="delete">삭제</string>
+    <string name="cancel">취소</string>
+    <string name="ok">확인</string>
+    <string name="close">닫기</string>
+
+    <string name="toast_timer_sound_set">타이머 소리 설정됨</string>
+    <string name="toast_timer_sound_restored">타이머 소리: 기본으로 복원</string>
+    <string name="duration_dialog_title">지속 설정</string>
+    <string name="duration_dialog_message">5분부터 60분까지, 또는 연속을 선택할 수 있습니다.</string>
+    <string name="duration_minutes_fmt">%1$d분</string>
+    <string name="duration_forever">연속</string>
+    <string name="toast_duration_forever">타이머 지속: 연속</string>
+    <string name="toast_duration_minutes">타이머 지속: %1$d분</string>
+    <string name="toast_duration_restored">타이머 지속: 5분(기본)으로 복원</string>
+    <string name="toast_logs_cleared">로그를 삭제했습니다.</string>
+    <string name="rename_main_title">메인 타이머 이름 변경</string>
+    <string name="rename_main_hint">예: 홍길동 (비우면 기본)</string>
+    <string name="rename_label_title">라벨 변경</string>
+    <string name="status_paused">일시정지</string>
+    <string name="status_running">실행 중</string>
+    <string name="date_today_fmt">오늘 %1$s</string>
+    <string name="date_tomorrow_fmt">내일 %1$s %2$s</string>
+    <string name="unit_hour_short">시간</string>
+    <string name="unit_min_short">분</string>
+    <string name="unit_sec_short">초</string>
+    <string name="preset_fmt_hm">%1$d시간 %2$d분</string>
+    <string name="preset_fmt_h">%1$d시간</string>
+    <string name="preset_fmt_m">%1$d분</string>
+    <string name="toast_min_one_second">시간을 1초 이상 입력해 주세요</string>
+
+    <!-- 스톱워치 -->
+    <string name="btn_lap">기록</string>
+    <string name="btn_switch">전환</string>
+    <string name="btn_keep_screen">유지</string>
+    <string name="btn_keep_screen_off">해제</string>
+    <string name="btn_keep_screen_long">화면꺼짐 방지</string>
+    <string name="btn_keep_screen_long_off">방지 해제</string>
+    <string name="btn_clock">시계</string>
+    <string name="stopwatch_2_title">스톱워치 2</string>
+
+    <string name="alarm_title">타이머 완료!</string>
+    <string name="alarm_swipe">→ 끝까지 밀면 꺼집니다</string>
+
+    <string name="digit_0">0</string>
+    <string name="digit_1">1</string>
+    <string name="digit_2">2</string>
+    <string name="digit_3">3</string>
+    <string name="digit_4">4</string>
+    <string name="digit_5">5</string>
+    <string name="digit_6">6</string>
+    <string name="digit_7">7</string>
+    <string name="digit_8">8</string>
+    <string name="digit_9">9</string>
+    <string name="arrow_back">←</string>
+    <string name="now_on_pad_text">현재 시간 00:00:00.000 오전</string>
+
+    <string name="alarm_cancel">취소</string>
+    <string name="alarm_save">저장</string>
+    <string name="alarm_days">요일</string>
+    <string name="alarm_every_week">매주</string>
+    <string name="alarm_calendar">달력</string>
+    <string name="alarm_name">알람 이름</string>
+    <string name="alarm_name_hint">예) 기상</string>
+    <string name="alarm_sound">알림음</string>
+    <string name="alarm_vibrate">진동</string>
+    <string name="alarm_snooze">다시 울림</string>
+    <string name="alarm_enabled">알람 활성화</string>
+    <string name="alarm_change_sound">소리 변경</string>
+    <string name="alarm_sound_current_default">기본: alarm_sound.mp3</string>
+    <string name="alarm_sound_current_custom">사용자: %1$s</string>
+    <string name="alarm_sound_pick_failed">선택한 파일을 사용할 수 없어 기본 소리로 되돌렸습니다.</string>
+    <string name="toast_alarm_sound_set">알람 소리 설정됨</string>
+    <string name="toast_alarm_sound_restored">기본 소리로 복원</string>
+    <string name="day_sun">일</string>
+    <string name="day_mon">월</string>
+    <string name="day_tue">화</string>
+    <string name="day_wed">수</string>
+    <string name="day_thu">목</string>
+    <string name="day_fri">금</string>
+    <string name="day_sat">토</string>
+    <string name="snooze_5m">5분</string>
+    <string name="snooze_10m">10분</string>
+    <string name="snooze_15m">15분</string>
+    <string name="snooze_20m">20분</string>
+    <string name="snooze_30m">30분</string>
+    <string name="snooze_custom">사용자</string>
+    <string name="snooze_custom_fmt">사용자(%1$d분)</string>
+    <string name="snooze_custom_title">사용자 설정</string>
+    <string name="snooze_custom_message">1분부터 60분까지 선택할 수 있습니다.</string>
+
+    <string name="snooze_3x">3회</string>
+    <string name="snooze_5x">5회</string>
+    <string name="snooze_forever">계속</string>
+
+    <string name="alarm_time">시간</string>
+    <string name="alarm_now_datetime">현재 %1$s</string>
+    <string name="alarm_now_datetime_placeholder">현재 년도, 월, 일, 요일, 오전/오후, 시간, 분, 초</string>
+    <string name="alarm_now_datetime_pattern">yyyy년 M월 d일 EEEE a h:mm:ss</string>
+
+    <!-- 알람 목록 / 그룹 / 스누즈 화면 -->
+    <string name="alarm_group_other">기타</string>
+    <string name="alarm_group_other_ungroup">기타 (그룹 해제)</string>
+    <string name="alarm_group_create_new">새 그룹 만들기…</string>
+    <string name="alarm_group_move_title">그룹으로 이동</string>
+    <string name="alarm_group_manage_title">그룹 관리</string>
+    <string name="alarm_group_new_title">새 그룹</string>
+    <string name="alarm_group_name_hint">그룹 이름</string>
+    <string name="alarm_group_create_btn">생성</string>
+    <string name="alarm_group_rename">이름 변경</string>
+    <string name="alarm_group_delete_title">그룹 삭제</string>
+    <string name="alarm_group_delete_msg">그룹 \'%1$s\'을 삭제할까요?\n알람은 \'기타\'로 이동됩니다.</string>
+    <string name="alarm_select_none">전체 해제</string>
+
+    <string name="alarm_weekday_default">요일 알람</string>
+    <string name="alarm_again_current_time">현재 시간</string>
+    <string name="alarm_again_title">알람!</string>
+    <string name="alarm_again_count_fmt">%1$d회</string>
+    <string name="alarm_again_total_forever_fmt">%1$d회(계속)</string>
+    <string name="alarm_again_total_fmt">%1$d회</string>
+    <string name="alarm_again_info_fmt">이 알람은 요일 알람 입니다\n밀어서 해제하면 1분 후에 다시 알림이 울립니다 (각 울림 최대 %1$d분)\n총 %2$s 해제하면 완전 종료됩니다</string>
+    <string name="alarm_again_full_dismiss">완전 해제</string>
+    <string name="alarm_again_minute_suffix">분</string>
+
+    <!-- 미니 달력(팝업) -->
+    <string name="calendar_today">오늘</string>
+    <string name="calendar_close">나가기</string>
+    <string name="calendar_month_title_fmt">%1$d년 %2$d월</string>
+
+    <string name="alarm_groups">그룹</string>
+    <string name="alarm_move_group">그룹</string>
+
+    <!-- 알림 및 채널 -->
+    <string name="channel_timer_progress">타이머 진행</string>
+    <string name="channel_stopwatch_progress">스톱워치 진행</string>
+    <string name="channel_stopwatch_desc">스톱워치가 실행 중일 때 표시되는 알림</string>
+    <string name="channel_extra_progress">보조 타이머 진행</string>
+    <string name="channel_clock_display">시계 표시</string>
+    <string name="channel_clock_desc">현재 시간을 표시하는 시계 알림</string>
+    <string name="channel_timer_alarm">Timer Alarm</string>
+    <string name="channel_timer_alarm_desc">타이머 알람 채널</string>
+    <string name="channel_alarm_history">Alarm History</string>
+    <string name="channel_alarm_history_desc">알람 울림 기록</string>
+    <string name="channel_weekday_alarm_desc">요일(반복) 알람</string>
+
+    <string name="notif_timer_finished_title">⏰ 타이머 종료</string>
+    <string name="notif_weekday_alarm_title">⏰ 요일 알람</string>
+    <string name="notif_dismiss_alarm">알람 끄기</string>
+    <string name="notif_timer_history_title">타이머 종료 시각</string>
+    <string name="notif_alarm_history_title">알람 종료 시각</string>
+    <string name="notif_timer_history_text">%1$s • \"%2$s\" 타이머 종료</string>
+    <string name="notif_alarm_history_text">%1$s • \"%2$s\" 알람 종료</string>
+    <string name="notif_extra_running_count">진행 중: %1$d개</string>
+    <string name="notif_paused_with_total">일시정지 (%1$s)</string>
+    <string name="notif_end_with_total">%1$s / 종료 %2$s</string>
+    <string name="notif_end_only">종료 %1$s</string>
+    <string name="notif_date_format_day">M월 d일</string>
+    <string name="notif_date_format_time">a h:mm</string>
+
+    <!-- 설정 및 테마 -->
+    <string name="settings_title">설정</string>
+    <string name="settings_subtitle">네모 색상 상자를 누르면 앱 전체 색상이 즉시 변경됩니다.</string>
+    <string name="settings_theme_section">앱 색상 테마 (8종)</string>
+    <string name="settings_sound_guide_title">알림음 및 파일 호환 안내</string>
+    <string name="settings_sound_guide_body">타이머와 요일 알람 모두 MP3 · WAV · M4A 오디오 파일을 선택할 수 있습니다. 선택한 파일을 삭제하거나 이동하면 자동으로 기본 알림음(alarm_sound.mp3)으로 복귀합니다.</string>
+    <string name="settings_language_section">언어 설정 (Language)</string>
+    <string name="settings_language_desc">버튼을 누르면 앱 전체 언어가 즉시 전환됩니다.</string>
+    <string name="lang_korean">KR 한국어</string>
+    <string name="lang_english">EN English</string>
+    <string name="theme_applying_badge">적용 중</string>
+
+    <string name="theme_original_title">오리지널</string>
+    <string name="theme_original_subtitle">기본 민트 · 자동 다크</string>
+    <string name="theme_amoled_title">퓨어 블랙</string>
+    <string name="theme_amoled_subtitle">배터리 절약 · 흰 테두리</string>
+    <string name="theme_blue_title">연파랑</string>
+    <string name="theme_blue_subtitle">맑은 하늘빛 블루</string>
+    <string name="theme_pink_title">연분홍</string>
+    <string name="theme_pink_subtitle">부드러운 블라썸 핑크</string>
+    <string name="theme_crimson_title">크림슨 로즈</string>
+    <string name="theme_crimson_subtitle">진한 레드 · 화이트·로즈 포인트</string>
+    <string name="theme_lavender_title">라벤더</string>
+    <string name="theme_lavender_subtitle">AI 추천 · 은은한 보라</string>
+    <string name="theme_sand_title">샌드 앰버</string>
+    <string name="theme_sand_subtitle">AI 추천 · 따뜻한 크림</string>
+    <string name="theme_navy_title">딥 네이비</string>
+    <string name="theme_navy_subtitle">AI 추천 · 편안한 야간</string>
+
+    <!-- 로그 -->
+    <string name="log_dialog_title">알림/타이머 로그</string>
+    <string name="log_share">공유</string>
+    <string name="log_save">저장</string>
+    <string name="log_copy">복사</string>
+    <string name="log_saved_fmt">%1$s 저장됨</string>
+    <string name="log_save_failed">로그 저장에 실패했습니다</string>
+    <string name="log_copied">로그를 복사했습니다</string>
+    <string name="log_share_chooser">로그 공유</string>
+    <string name="log_empty">저장된 로그가 없습니다.</string>
+    <string name="log_prev_header">[이전 로그]</string>
+    <string name="log_curr_header">[현재 로그]</string>
+    <string name="log_read_failed">로그 읽기 실패: %1$s</string>
+</resources>
