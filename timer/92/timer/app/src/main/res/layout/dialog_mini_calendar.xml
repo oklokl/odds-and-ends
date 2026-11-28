@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/overlayRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#80000000"
+    android:clickable="true"
+    android:focusable="true">
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/calendarCard"
+        style="@style/Timer.SurfaceCard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="72dp"
+        android:layout_marginEnd="16dp"
+        app:cardCornerRadius="22dp"
+        app:cardElevation="10dp"
+        app:cardUseCompatPadding="true">
+
+        <LinearLayout
+            android:id="@+id/calendarSwipeTarget"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvMonthTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="2026년 1월"
+                    android:textColor="?attr/appTextPrimary"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnToday"
+                    style="@style/Timer.TonalPillButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:autoSizeMaxTextSize="13sp"
+                    android:autoSizeMinTextSize="10sp"
+                    android:autoSizeStepGranularity="1sp"
+                    android:autoSizeTextType="uniform"
+                    android:maxLines="1"
+                    android:minWidth="0dp"
+                    android:minHeight="40dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="@string/calendar_today"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/MiniCalendar.Weekday"
+                    android:text="@string/day_sun"
+                    android:textColor="?attr/appDanger" />
+
+                <TextView
+                    style="@style/MiniCalendar.Weekday"
+                    android:text="@string/day_mon" />
+
+                <TextView
+                    style="@style/MiniCalendar.Weekday"
+                    android:text="@string/day_tue" />
+
+                <TextView
+                    style="@style/MiniCalendar.Weekday"
+                    android:text="@string/day_wed" />
+
+                <TextView
+                    style="@style/MiniCalendar.Weekday"
+                    android:text="@string/day_thu" />
+
+                <TextView
+                    style="@style/MiniCalendar.Weekday"
+                    android:text="@string/day_fri" />
+
+                <TextView
+                    style="@style/MiniCalendar.Weekday"
+                    android:text="@string/day_sat" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/weeksContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnClose"
+                style="@style/Timer.PrimaryPillButton"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:layout_marginTop="14dp"
+                android:text="@string/calendar_close" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</FrameLayout>

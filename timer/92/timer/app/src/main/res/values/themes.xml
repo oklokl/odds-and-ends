@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 1. 오리지널 (기본 민트/세이지 - 시스템 라이트/다크 자동 대응) -->
+    <style name="Theme.Timer" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/accent_primary</item>
+        <item name="colorOnPrimary">@color/on_accent_primary</item>
+        <item name="colorPrimaryContainer">@color/accent_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/on_primary_container</item>
+
+        <item name="colorSecondary">@color/accent_secondary</item>
+        <item name="colorOnSecondary">@color/on_accent_primary</item>
+        <item name="colorSecondaryContainer">@color/accent_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/on_secondary_container</item>
+
+        <item name="android:colorBackground">@color/timer_bg</item>
+        <item name="colorSurface">@color/surface_card</item>
+        <item name="colorSurfaceContainer">@color/surface_bottom_bar</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
+        <item name="colorOutline">@color/divider_subtle</item>
+
+        <item name="appBgColor">@color/timer_bg</item>
+        <item name="appSurfaceCard">@color/surface_card</item>
+        <item name="appSurfaceCardAlt">@color/surface_card_alt</item>
+        <item name="appBottomBarColor">@color/surface_bottom_bar</item>
+        <item name="appAccentPrimary">@color/accent_primary</item>
+        <item name="appOnAccentPrimary">@color/on_accent_primary</item>
+        <item name="appPrimaryContainer">@color/accent_primary_container</item>
+        <item name="appOnPrimaryContainer">@color/on_primary_container</item>
+        <item name="appAccentSecondary">@color/accent_secondary</item>
+        <item name="appSecondaryContainer">@color/accent_secondary_container</item>
+        <item name="appOnSecondaryContainer">@color/on_secondary_container</item>
+        <item name="appDanger">@color/accent_danger</item>
+        <item name="appDangerContainer">@color/accent_danger_container</item>
+        <item name="appTextPrimary">@color/text_primary</item>
+        <item name="appTextSecondary">@color/text_secondary</item>
+        <item name="appTextTertiary">@color/text_tertiary</item>
+        <item name="appDivider">@color/divider_subtle</item>
+        <item name="appStrokeColor">@color/divider_subtle</item>
+        <item name="appPrimaryStrokeColor">@android:color/transparent</item>
+        <item name="appPrimaryStrokeWidth">0dp</item>
+        <item name="appTabIndicatorBg">@color/tab_indicator_bg</item>
+        <item name="appTabActiveText">@color/tab_active_text</item>
+        <item name="appTabInactiveText">@color/tab_inactive_text</item>
+    </style>
+
+    <!-- 2. 퓨어 블랙 (배터리 절약: 완전 검정 배경 + 흰색 테두리 + 흰색 글자/숫자) -->
+    <style name="Theme.Timer.AmoledBlack" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">#FFFFFF</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorPrimaryContainer">#000000</item>
+        <item name="colorOnPrimaryContainer">#FFFFFF</item>
+
+        <item name="colorSecondary">#FFFFFF</item>
+        <item name="colorOnSecondary">#000000</item>
+        <item name="colorSecondaryContainer">#000000</item>
+        <item name="colorOnSecondaryContainer">#FFFFFF</item>
+
+        <item name="android:colorBackground">#000000</item>
+        <item name="colorSurface">#000000</item>
+        <item name="colorSurfaceContainer">#000000</item>
+        <item name="colorOnSurface">#FFFFFF</item>
+        <item name="colorOnSurfaceVariant">#D0D0D0</item>
+        <item name="colorOutline">#FFFFFF</item>
+
+        <item name="appBgColor">#000000</item>
+        <item name="appSurfaceCard">#000000</item>
+        <item name="appSurfaceCardAlt">#000000</item>
+        <item name="appBottomBarColor">#000000</item>
+        <item name="appAccentPrimary">#000000</item>
+        <item name="appOnAccentPrimary">#FFFFFF</item>
+        <item name="appPrimaryContainer">#000000</item>
+        <item name="appOnPrimaryContainer">#FFFFFF</item>
+        <item name="appAccentSecondary">#000000</item>
+        <item name="appSecondaryContainer">#000000</item>
+        <item name="appOnSecondaryContainer">#FFFFFF</item>
+        <item name="appDanger">#FF8A80</item>
+        <item name="appDangerContainer">#000000</item>
+        <item name="appTextPrimary">#FFFFFF</item>
+        <item name="appTextSecondary">#D8D8D8</item>
+        <item name="appTextTertiary">#A8A8A8</item>
+        <item name="appDivider">#FFFFFF</item>
+        <item name="appStrokeColor">#FFFFFF</item>
+        <item name="appPrimaryStrokeColor">#FFFFFF</item>
+        <item name="appPrimaryStrokeWidth">1.5dp</item>
+        <item name="appTabIndicatorBg">#000000</item>
+        <item name="appTabActiveText">#FFFFFF</item>
+        <item name="appTabInactiveText">#9E9E9E</item>
+    </style>
+
+    <!-- 3. 연파랑 (스카이 블루) -->
+    <style name="Theme.Timer.PastelBlue" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">#1D63B8</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#C4DFFB</item>
+        <item name="colorOnPrimaryContainer">#0E3361</item>
+
+        <item name="colorSecondary">#385F8A</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorSecondaryContainer">#D7E8F9</item>
+        <item name="colorOnSecondaryContainer">#183656</item>
+
+        <item name="android:colorBackground">#E3F0FC</item>
+        <item name="colorSurface">#F7FBFF</item>
+        <item name="colorSurfaceContainer">#EFF6FD</item>
+        <item name="colorOnSurface">#102033</item>
+        <item name="colorOnSurfaceVariant">#445A73</item>
+        <item name="colorOutline">#C0D7EE</item>
+
+        <item name="appBgColor">#E3F0FC</item>
+        <item name="appSurfaceCard">#F7FBFF</item>
+        <item name="appSurfaceCardAlt">#D2E5F8</item>
+        <item name="appBottomBarColor">#EFF6FD</item>
+        <item name="appAccentPrimary">#1D63B8</item>
+        <item name="appOnAccentPrimary">#FFFFFF</item>
+        <item name="appPrimaryContainer">#C4DFFB</item>
+        <item name="appOnPrimaryContainer">#0E3361</item>
+        <item name="appAccentSecondary">@color/accent_secondary</item>
+        <item name="appSecondaryContainer">#D7E8F9</item>
+        <item name="appOnSecondaryContainer">#183656</item>
+        <item name="appDanger">#C93B3B</item>
+        <item name="appDangerContainer">#FDE7E7</item>
+        <item name="appTextPrimary">#102033</item>
+        <item name="appTextSecondary">#445A73</item>
+        <item name="appTextTertiary">#6C8299</item>
+        <item name="appDivider">#C0D7EE</item>
+        <item name="appStrokeColor">#C0D7EE</item>
+        <item name="appPrimaryStrokeColor">@android:color/transparent</item>
+        <item name="appPrimaryStrokeWidth">0dp</item>
+        <item name="appTabIndicatorBg">#C4DFFB</item>
+        <item name="appTabActiveText">#0E3361</item>
+        <item name="appTabInactiveText">#586E87</item>
+    </style>
+
+    <!-- 4. 연분홍 (블라썸 핑크) -->
+    <style name="Theme.Timer.PastelPink" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">#B8326A</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#F9C8DC</item>
+        <item name="colorOnPrimaryContainer">#571130</item>
+
+        <item name="colorSecondary">#7D4B63</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorSecondaryContainer">#F5DCE7</item>
+        <item name="colorOnSecondaryContainer">#472034</item>
+
+        <item name="android:colorBackground">#FCE9F0</item>
+        <item name="colorSurface">#FFF8FA</item>
+        <item name="colorSurfaceContainer">#FDF2F6</item>
+        <item name="colorOnSurface">#2E1320</item>
+        <item name="colorOnSurfaceVariant">#6B4959</item>
+        <item name="colorOutline">#ECC7D6</item>
+
+        <item name="appBgColor">#FCE9F0</item>
+        <item name="appSurfaceCard">#FFF8FA</item>
+        <item name="appSurfaceCardAlt">#F7D5E3</item>
+        <item name="appBottomBarColor">#FDF2F6</item>
+        <item name="appAccentPrimary">#B8326A</item>
+        <item name="appOnAccentPrimary">#FFFFFF</item>
+        <item name="appPrimaryContainer">#F9C8DC</item>
+        <item name="appOnPrimaryContainer">#571130</item>
+        <item name="appAccentSecondary">#7D4B63</item>
+        <item name="appSecondaryContainer">#F5DCE7</item>
+        <item name="appOnSecondaryContainer">#472034</item>
+        <item name="appDanger">#B71C1C</item>
+        <item name="appDangerContainer">#FADBD8</item>
+        <item name="appTextPrimary">#2E1320</item>
+        <item name="appTextSecondary">#6B4959</item>
+        <item name="appTextTertiary">#947181</item>
+        <item name="appDivider">#ECC7D6</item>
+        <item name="appStrokeColor">#ECC7D6</item>
+        <item name="appPrimaryStrokeColor">@android:color/transparent</item>
+        <item name="appPrimaryStrokeWidth">0dp</item>
+        <item name="appTabIndicatorBg">#F9C8DC</item>
+        <item name="appTabActiveText">#571130</item>
+        <item name="appTabInactiveText">#7D5A6A</item>
+    </style>
+
+    <!-- 5. 크림슨 로즈 (진한 크림슨 레드 + 크림 화이트·소프트 로즈 포인트) -->
+    <style name="Theme.Timer.CobaltRed" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">#FFF5F5</item>
+        <item name="colorOnPrimary">#881313</item>
+        <item name="colorPrimaryContainer">#FAD2D8</item>
+        <item name="colorOnPrimaryContainer">#6B0F1A</item>
+
+        <item name="colorSecondary">#FCE7EB</item>
+        <item name="colorOnSecondary">#7F1D1D</item>
+        <item name="colorSecondaryContainer">#F6B8C2</item>
+        <item name="colorOnSecondaryContainer">#6B0F1A</item>
+
+        <item name="android:colorBackground">#991B1B</item>
+        <item name="colorSurface">#B91C1C</item>
+        <item name="colorSurfaceContainer">#881313</item>
+        <item name="colorOnSurface">#FFFFFF</item>
+        <item name="colorOnSurfaceVariant">#FFE4E6</item>
+        <item name="colorOutline">#FCA5A5</item>
+
+        <item name="appBgColor">#991B1B</item>
+        <item name="appSurfaceCard">#B91C1C</item>
+        <item name="appSurfaceCardAlt">#7F1D1D</item>
+        <item name="appBottomBarColor">#881313</item>
+        <item name="appAccentPrimary">#FFF5F5</item>
+        <item name="appOnAccentPrimary">#881313</item>
+        <item name="appPrimaryContainer">#FAD2D8</item>
+        <item name="appOnPrimaryContainer">#6B0F1A</item>
+        <item name="appAccentSecondary">#F6B8C2</item>
+        <item name="appSecondaryContainer">#F6B8C2</item>
+        <item name="appOnSecondaryContainer">#6B0F1A</item>
+        <item name="appDanger">#FFD4D4</item>
+        <item name="appDangerContainer">#7F1D1D</item>
+        <item name="appTextPrimary">#FFFFFF</item>
+        <item name="appTextSecondary">#FFE4E6</item>
+        <item name="appTextTertiary">#FECDD3</item>
+        <item name="appDivider">#F87171</item>
+        <item name="appStrokeColor">#FCA5A5</item>
+        <item name="appPrimaryStrokeColor">@android:color/transparent</item>
+        <item name="appPrimaryStrokeWidth">0dp</item>
+        <item name="appTabIndicatorBg">#FAD2D8</item>
+        <item name="appTabActiveText">#6B0F1A</item>
+        <item name="appTabInactiveText">#FECDD3</item>
+    </style>
+
+    <!-- 6. 라벤더 (AI 추천 - 은은한 보라) -->
+    <style name="Theme.Timer.Lavender" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">#5E3BB5</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#DDD1FB</item>
+        <item name="colorOnPrimaryContainer">#2B1663</item>
+
+        <item name="colorSecondary">#584F78</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorSecondaryContainer">#E7E1F7</item>
+        <item name="colorOnSecondaryContainer">#2E274A</item>
+
+        <item name="android:colorBackground">#EFEAFC</item>
+        <item name="colorSurface">#FAF8FF</item>
+        <item name="colorSurfaceContainer">#F4F1FD</item>
+        <item name="colorOnSurface">#1E1633</item>
+        <item name="colorOnSurfaceVariant">#564C70</item>
+        <item name="colorOutline">#D2C7EC</item>
+
+        <item name="appBgColor">#EFEAFC</item>
+        <item name="appSurfaceCard">#FAF8FF</item>
+        <item name="appSurfaceCardAlt">#E2DAF7</item>
+        <item name="appBottomBarColor">#F4F1FD</item>
+        <item name="appAccentPrimary">#5E3BB5</item>
+        <item name="appOnAccentPrimary">#FFFFFF</item>
+        <item name="appPrimaryContainer">#DDD1FB</item>
+        <item name="appOnPrimaryContainer">#2B1663</item>
+        <item name="appAccentSecondary">#584F78</item>
+        <item name="appSecondaryContainer">#E7E1F7</item>
+        <item name="appOnSecondaryContainer">#2E274A</item>
+        <item name="appDanger">#C93B3B</item>
+        <item name="appDangerContainer">#FDE7E7</item>
+        <item name="appTextPrimary">#1E1633</item>
+        <item name="appTextSecondary">#564C70</item>
+        <item name="appTextTertiary">#7E7399</item>
+        <item name="appDivider">#D2C7EC</item>
+        <item name="appStrokeColor">#D2C7EC</item>
+        <item name="appPrimaryStrokeColor">@android:color/transparent</item>
+        <item name="appPrimaryStrokeWidth">0dp</item>
+        <item name="appTabIndicatorBg">#DDD1FB</item>
+        <item name="appTabActiveText">#2B1663</item>
+        <item name="appTabInactiveText">#665C82</item>
+    </style>
+
+    <!-- 7. 샌드 앰버 (AI 추천 - 따뜻한 크림/호박색) -->
+    <style name="Theme.Timer.WarmSand" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">#A35814</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#F2D7B5</item>
+        <item name="colorOnPrimaryContainer">#4D2605</item>
+
+        <item name="colorSecondary">#705B42</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorSecondaryContainer">#EDE1CE</item>
+        <item name="colorOnSecondaryContainer">#3D2E1D</item>
+
+        <item name="android:colorBackground">#F5EEE1</item>
+        <item name="colorSurface">#FCF9F2</item>
+        <item name="colorSurfaceContainer">#F9F4EA</item>
+        <item name="colorOnSurface">#2C2014</item>
+        <item name="colorOnSurfaceVariant">#635241</item>
+        <item name="colorOutline">#E0D1BA</item>
+
+        <item name="appBgColor">#F5EEE1</item>
+        <item name="appSurfaceCard">#FCF9F2</item>
+        <item name="appSurfaceCardAlt">#EBE0CE</item>
+        <item name="appBottomBarColor">#F9F4EA</item>
+        <item name="appAccentPrimary">#A35814</item>
+        <item name="appOnAccentPrimary">#FFFFFF</item>
+        <item name="appPrimaryContainer">#F2D7B5</item>
+        <item name="appOnPrimaryContainer">#4D2605</item>
+        <item name="appAccentSecondary">#705B42</item>
+        <item name="appSecondaryContainer">#EDE1CE</item>
+        <item name="appOnSecondaryContainer">#3D2E1D</item>
+        <item name="appDanger">#C93B3B</item>
+        <item name="appDangerContainer">#FDE7E7</item>
+        <item name="appTextPrimary">#2C2014</item>
+        <item name="appTextSecondary">#635241</item>
+        <item name="appTextTertiary">#8C7966</item>
+        <item name="appDivider">#E0D1BA</item>
+        <item name="appStrokeColor">#E0D1BA</item>
+        <item name="appPrimaryStrokeColor">@android:color/transparent</item>
+        <item name="appPrimaryStrokeWidth">0dp</item>
+        <item name="appTabIndicatorBg">#F2D7B5</item>
+        <item name="appTabActiveText">#4D2605</item>
+        <item name="appTabInactiveText">#756350</item>
+    </style>
+
+    <!-- 8. 딥 네이비 (AI 추천 - 눈이 편한 야간 네이비) -->
+    <style name="Theme.Timer.DeepNavy" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">#6FA8FF</item>
+        <item name="colorOnPrimary">#0B1F3F</item>
+        <item name="colorPrimaryContainer">#223863</item>
+        <item name="colorOnPrimaryContainer">#DCE9FF</item>
+
+        <item name="colorSecondary">#8EA8D6</item>
+        <item name="colorOnSecondary">#0E203D</item>
+        <item name="colorSecondaryContainer">#203052</item>
+        <item name="colorOnSecondaryContainer">#D7E3F8</item>
+
+        <item name="android:colorBackground">#0E1628</item>
+        <item name="colorSurface">#17223B</item>
+        <item name="colorSurfaceContainer">#121C32</item>
+        <item name="colorOnSurface">#ECF2FF</item>
+        <item name="colorOnSurfaceVariant">#A6B7D4</item>
+        <item name="colorOutline">#2B3B5E</item>
+
+        <item name="appBgColor">#0E1628</item>
+        <item name="appSurfaceCard">#17223B</item>
+        <item name="appSurfaceCardAlt">#202E4F</item>
+        <item name="appBottomBarColor">#121C32</item>
+        <item name="appAccentPrimary">#6FA8FF</item>
+        <item name="appOnAccentPrimary">#0B1F3F</item>
+        <item name="appPrimaryContainer">#223863</item>
+        <item name="appOnPrimaryContainer">#DCE9FF</item>
+        <item name="appAccentSecondary">#8EA8D6</item>
+        <item name="appSecondaryContainer">#203052</item>
+        <item name="appOnSecondaryContainer">#D7E3F8</item>
+        <item name="appDanger">#FF8A80</item>
+        <item name="appDangerContainer">#3E1C22</item>
+        <item name="appTextPrimary">#ECF2FF</item>
+        <item name="appTextSecondary">#A6B7D4</item>
+        <item name="appTextTertiary">#788BAE</item>
+        <item name="appDivider">#2B3B5E</item>
+        <item name="appStrokeColor">#2B3B5E</item>
+        <item name="appPrimaryStrokeColor">@android:color/transparent</item>
+        <item name="appPrimaryStrokeWidth">0dp</item>
+        <item name="appTabIndicatorBg">#223863</item>
+        <item name="appTabActiveText">#DCE9FF</item>
+        <item name="appTabInactiveText">#8D9EC0</item>
+    </style>
+</resources>
